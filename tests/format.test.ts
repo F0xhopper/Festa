@@ -107,36 +107,24 @@ describe("readings", () => {
 });
 
 describe("Matins reading", () => {
-	const lastLine = (
-		iso: string,
-		titleLanguage: "both" | "la" | "en" = "both",
-		matins: "both" | "la" | "en" | "off" = "both",
-		matinsMode: "popup" | "note" = "note",
-	) => {
-		const lines = renderCallout(lookup(iso)!, { titleLanguage, matins, matinsMode, template: defaultTemplate("full", titleLanguage) }).split("\n");
+	const lastLine = (iso: string, titleLanguage: "both" | "la" | "en" = "both", matins: "both" | "la" | "en" | "off" = "both") => {
+		const lines = renderCallout(lookup(iso)!, { titleLanguage, matins, template: defaultTemplate("full", titleLanguage) }).split("\n");
 		return lines[lines.length - 1];
 	};
 
-	it("links in-app by default, opening the reading without a file", () => {
-		const out = renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", matins: "both", template: defaultTemplate("full", "both") }).split("\n");
-		expect(out[out.length - 1]).toBe("> [Matins reading](obsidian://festa?matins=2026-09-30)");
-		expect(lastLine("2026-09-26", "both", "both", "popup")).toBe("> [Matins reading · Sts. Cyprian & Justina](obsidian://festa?matins=2026-09-26)");
-	});
-
-	it("ends the callout with a link to the reading's note in note mode", () => {
-		expect(lastLine("2026-09-30")).toBe("> [[Festa/Matins/St. Jerome|Matins reading]]");
-		expect(matinsNotePath(lookup("2026-09-30")!, "Liturgy/Readings/")).toBe("Liturgy/Readings/St. Jerome.md");
+	it("links in-app, opening the reading without a file", () => {
+		expect(lastLine("2026-09-30")).toBe("> [Matins reading](obsidian://festa?matins=2026-09-30)");
 	});
 
 	it("names the commemorated saint when the reading is theirs", () => {
-		expect(lastLine("2026-09-26")).toBe("> [[Festa/Matins/Sts. Cyprian & Justina|Matins reading · Sts. Cyprian & Justina]]");
-		expect(lastLine("2026-09-26", "la")).toBe("> [[Festa/Matins/Sts. Cyprian & Justina|Lectio ad Matutinum · Ss. Cypriani et Justinæ Martyrum]]");
+		expect(lastLine("2026-09-26")).toBe("> [Matins reading · Sts. Cyprian & Justina](obsidian://festa?matins=2026-09-26)");
+		expect(lastLine("2026-09-26", "la")).toBe("> [Lectio ad Matutinum · Ss. Cypriani et Justinæ Martyrum](obsidian://festa?matins=2026-09-26)");
 	});
 
-	it("keeps note names unique when two feasts share a title", () => {
+	it("keeps saved-note names unique when two feasts share a title", () => {
 		expect(matinsNoteName("sancti:12-26c:4:w")).toBe("For Octave of the Nativity (12-26c)");
 		expect(matinsNoteName("sancti:12-27c:4:w")).toBe("For Octave of the Nativity (12-27c)");
-		expect(matinsNoteName("sancti:09-30:3:w")).toBe("St. Jerome");
+		expect(matinsNotePath(lookup("2026-09-30")!)).toBe("Festa/Matins/St. Jerome.md");
 	});
 
 	it("has no link when off or when there is no reading", () => {
@@ -145,7 +133,7 @@ describe("Matins reading", () => {
 		if (!day.matins) expect(lastLine("2026-10-06")).not.toContain("Matins");
 	});
 
-	it("writes the note in Latin and English, with the sermon's source in italics", () => {
+	it("writes the reading in Latin and English, with the sermon's source in italics", () => {
 		const note = matinsNoteContent(lookup("2026-09-29")!, "both");
 		expect(note.startsWith("# Dedication of St. Michael the Archangel\n\n*In Dedicatione S. Michælis Archangelis*\n\n## Lectio\n\n*Sermo sancti Gregórii Papæ*\n\n")).toBe(true);
 		expect(note).toContain("## Reading\n\n*From the Sermons of Pope St. Gregory the Great*");

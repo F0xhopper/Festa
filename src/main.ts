@@ -68,7 +68,6 @@ export default class FestaPlugin extends Plugin {
 					new Notice(`Festa: no bundled data for ${date.slice(0, 4)}.`);
 					return;
 				}
-				if (this.settings.matinsMode === "note") void ensureMatinsNote(this.app, info, this.settings, false);
 				editor.replaceSelection(renderCallout(info, { ...this.settings, template: effectiveTemplate(this.settings) }) + "\n");
 			},
 		});
@@ -115,6 +114,13 @@ export default class FestaPlugin extends Plugin {
 		this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) as Partial<FestaSettings> | null) };
 		// Upgrade an unedited template from an earlier version to the current default.
 		this.settings.show = { ...DEFAULT_SHOW, ...this.settings.show };
+		// Drop settings from the removed note mode (1.2.0).
+		const stored = this.settings as unknown as Record<string, unknown>;
+		if ("matinsMode" in stored || "matinsFolder" in stored) {
+			delete stored.matinsMode;
+			delete stored.matinsFolder;
+			await this.saveSettings();
+		}
 		if (LEGACY_TEMPLATES.includes(this.settings.template)) {
 			this.settings.template = "";
 			await this.saveSettings();
@@ -136,7 +142,7 @@ export default class FestaPlugin extends Plugin {
 		new ReadingModal(this.app, markdown, {
 			text: "Save as note",
 			run: () =>
-				void ensureMatinsNote(this.app, info, { matins: lang, matinsFolder: this.settings.matinsFolder }, false).then(
+				void ensureMatinsNote(this.app, info, { matins: lang }, false).then(
 					(file) => file && void this.app.workspace.getLeaf(true).openFile(file),
 				),
 		}).open();

@@ -71,13 +71,11 @@ The readings line gives the references for the Epistle and Gospel of the day's M
 
 ### Matins reading (optional)
 
-Off by default. Turn on **Matins reading** in the settings and the last line links to the day's reading from Matins, the night office of the Breviary: the Church's own short life of the saint, or a Father's sermon on the feast. Click it and the reading opens in a window, in Latin and English, straight from the text bundled with Festa. Nothing is written to your vault. The window has a **Save as note** button if you want to keep a reading. The command **Open the reading of the day** does the same for the daily note you have open.
-
-If you would rather have the readings as notes, set **Open the reading** to **As a note**. Festa then creates one note per saint or feast in `Festa/Matins` (you can change the folder) the first time a daily note needs it, and links to it instead.
+Off by default. Turn on **Matins reading** in the settings and the last line links to the day's reading from Matins, the night office of the Breviary: the Church's own short life of the saint, or a Father's sermon on the feast. Click it and the reading opens in a window, in Latin and English, straight from the text bundled with Festa. Nothing is written to your vault. The window has a **Save as note** button if you want to keep a reading; it goes in `Festa/Matins`. The command **Open the reading of the day** does the same for the daily note you have open.
 
 The reading follows the 1960 rubrics: first- and second-class feasts give the three lessons of the second nocturn, and third-class feasts and commemorated saints give the single shortened historical lesson. On a day without a feast of its own, such as an Ember day, the link goes to the commemorated saint's reading and names them.
 
-Choose Latin and English, Latin, English, or none in the settings. In note mode, refreshing a daily note rewrites its reading note in the current language. Days whose lessons would come from the Common, such as ordinary weekdays and most minor commemorations, have no reading.
+Choose Latin and English, Latin, or English in the settings. Days whose lessons would come from the Common, such as ordinary weekdays and most minor commemorations, have no reading.
 
 ### Properties
 
@@ -102,8 +100,6 @@ SORT file.name ASC
 | Show the Latin title and Roman date | The italic Latin line. |
 | Fasting and abstinence | 1962 discipline, current law, or don't show. |
 | Matins reading | Off by default. Latin and English, Latin, or English. |
-| Open the reading | In a window (default, no files) or as a note. |
-| Matins notes folder | In note mode, where the reading notes are kept. Defaults to `Festa/Matins`. |
 | Custom template | Empty by default, which means the lines follow the options above. Write your own template here for full control. |
 | Insert callout | Add the callout at the top of the note. |
 | Insert properties | Add the properties listed above. |
@@ -130,7 +126,7 @@ SORT file.name ASC
 | `{fasting}` / `{fasting_la}` | Fast and abstinence / Jejunium et abstinentia |
 | `{readings}` / `{readings_la}` | Epistle: Heb 9:2–12 · Gospel: Luke 13:6–17 / Epistola: Hebr 9:2–12 · Evangelium: Luc 13:6–17 |
 | `{epistle}`, `{gospel}`, `{lessons}` | Each reference on its own, with `_la` versions |
-| `{matins}` | The link to the Matins reading: `[Matins reading](obsidian://festa?matins=2026-09-30)`, or a wiki link to the note in note mode |
+| `{matins}` | The link to the Matins reading: `[Matins reading](obsidian://festa?matins=2026-09-30)` |
 | `{weekday_la}` | Sabbato |
 | `{pages}` | Angelus Press p. 785 · Baronius p. 708 · Lasance p. 699 |
 | `{displaced}` | Feasts that give way to this day |

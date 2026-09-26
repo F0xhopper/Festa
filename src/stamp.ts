@@ -5,7 +5,6 @@ import {
 	FIELD_SUFFIXES,
 	frontmatterFields,
 	type MatinsLanguage,
-	type MatinsMode,
 	matinsNoteContent,
 	matinsNotePath,
 	effectiveTemplate,
@@ -23,8 +22,6 @@ export interface StampSettings {
 	show?: ShowOptions;
 	fasting: FastingDiscipline;
 	matins: MatinsLanguage;
-	matinsFolder: string;
-	matinsMode: MatinsMode;
 	template: string;
 	frontmatterPrefix: string;
 	insertFrontmatter: boolean;
@@ -52,7 +49,6 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
 		});
 	}
 	if (s.insertCallout) {
-		if (s.matinsMode === "note") await ensureMatinsNote(app, info, s, false);
 		const callout = renderCallout(info, { ...s, template: effectiveTemplate({ ...s, layout: s.layout ?? "full" }) });
 		await app.vault.process(file, (data) => {
 			const [, body] = splitFrontmatter(data);
@@ -69,7 +65,6 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
 export async function refreshFile(app: App, file: TFile, date: string, s: StampSettings): Promise<StampResult> {
 	const info = lookup(date);
 	if (!info) return "out-of-range";
-	if (s.insertCallout && s.matinsMode === "note") await ensureMatinsNote(app, info, s, true);
 	const current = await app.vault.read(file);
 	const [head] = splitFrontmatter(current);
 	const keys = FIELD_SUFFIXES.map((suffix) => s.frontmatterPrefix + suffix);
@@ -82,17 +77,14 @@ export async function refreshFile(app: App, file: TFile, date: string, s: StampS
 	return stampFile(app, file, date, s);
 }
 
-/**
- * Write the Matins note the daily note links to. Festa owns these notes: an existing one is
- * rewritten only when refreshing, so the text follows the current language setting.
- */
+/** Save a Matins reading as a note ("Save as note" in the reading window). An existing note is kept unless overwrite is set. */
 export async function ensureMatinsNote(
 	app: App,
 	info: DayInfo,
-	s: Pick<StampSettings, "matins" | "matinsFolder">,
+	s: Pick<StampSettings, "matins">,
 	overwrite: boolean,
 ): Promise<TFile | null> {
-	const path = matinsNotePath(info, s.matinsFolder);
+	const path = matinsNotePath(info);
 	const content = matinsNoteContent(info, s.matins);
 	if (!path || !content) return null;
 	const existing = app.vault.getAbstractFileByPath(path);

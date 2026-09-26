@@ -3,13 +3,11 @@ import { dataRange } from "./calendar";
 import { dailyNoteLocation } from "./daily-notes";
 import type { FastingDiscipline } from "./fasting";
 import {
-	DEFAULT_MATINS_FOLDER,
 	DEFAULT_SHOW,
 	defaultTemplate,
 	type ShowOptions,
 	type Layout,
 	type MatinsLanguage,
-	type MatinsMode,
 	TOKENS,
 	type TitleLanguage,
 } from "./format";
@@ -21,8 +19,6 @@ export interface FestaSettings {
 	show: ShowOptions;
 	fasting: FastingDiscipline;
 	matins: MatinsLanguage;
-	matinsFolder: string;
-	matinsMode: MatinsMode;
 	template: string;
 	insertFrontmatter: boolean;
 	frontmatterPrefix: string;
@@ -40,8 +36,6 @@ export const DEFAULT_SETTINGS: FestaSettings = {
 	show: { ...DEFAULT_SHOW },
 	fasting: "traditional",
 	matins: "off",
-	matinsFolder: DEFAULT_MATINS_FOLDER,
-	matinsMode: "popup",
 	/** Empty means: build the template from the options above. */
 	template: "",
 	insertFrontmatter: true,
@@ -142,32 +136,6 @@ export class FestaSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}),
 			);
-
-		new Setting(containerEl)
-			.setName("Open the reading")
-			.setDesc("In a window opens the reading without creating any files. As a note creates one note per saint or feast in a folder and links to it.")
-			.addDropdown((d) =>
-				d
-					.addOptions({ popup: "In a window", note: "As a note" })
-					.setValue(s.matinsMode)
-					.onChange(async (value) => {
-						s.matinsMode = value as MatinsMode;
-						await this.plugin.saveSettings();
-						this.display();
-					}),
-			);
-
-		if (s.matinsMode === "note") {
-			new Setting(containerEl)
-				.setName("Matins notes folder")
-				.setDesc("Where the reading notes are kept.")
-				.addText((t) =>
-					t.setValue(s.matinsFolder).onChange(async (value) => {
-						s.matinsFolder = value.trim() || DEFAULT_MATINS_FOLDER;
-						await this.plugin.saveSettings();
-					}),
-				);
-		}
 
 		const templateSetting = new Setting(containerEl)
 			.setName("Custom template")

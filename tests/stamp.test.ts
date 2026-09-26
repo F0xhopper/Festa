@@ -3,7 +3,8 @@ import { TFile } from "obsidian";
 import type { App } from "obsidian";
 import { defaultTemplate } from "../src/format";
 import { splitFrontmatter } from "../src/note-text";
-import { refreshFile, stampFile, type StampSettings } from "../src/stamp";
+import { lookup } from "../src/calendar";
+import { ensureMatinsNote, refreshFile, stampFile, type StampSettings } from "../src/stamp";
 
 /** A fake vault holding note text, with a naive processFrontMatter good enough for flat YAML. */
 function fakeApp(files: Record<string, string>, folders = new Set<string>()) {
@@ -41,8 +42,6 @@ const SETTINGS: StampSettings = {
 	titleLanguage: "both",
 	fasting: "traditional",
 	matins: "off",
-	matinsFolder: "Festa/Matins",
-	matinsMode: "popup",
 	template: defaultTemplate("full", "both"),
 	frontmatterPrefix: "feast",
 	insertFrontmatter: true,
@@ -155,25 +154,17 @@ describe("refreshFile", () => {
 		expect(files["Daily/2026-09-30.md"]).toContain("> [Matins reading](obsidian://festa?matins=2026-09-30)");
 	});
 
-	it("creates the Matins note once, and rewrites it only on refresh", async () => {
-		const files: Record<string, string> = { "Daily/2026-09-30.md": "x\n" };
+	it("saves a reading as a note only when asked, keeping an existing one", async () => {
+		const files: Record<string, string> = {};
 		const folders = new Set<string>();
 		const app = fakeApp(files, folders);
-		const file = new TFile("Daily/2026-09-30.md");
-		const s = { ...SETTINGS, insertFrontmatter: false, matins: "both" as const, matinsMode: "note" as const };
-		await stampFile(app, file, "2026-09-30", s);
-		expect(files["Daily/2026-09-30.md"]).toContain("> [[Festa/Matins/St. Jerome|Matins reading]]");
+		const info = lookup("2026-09-30")!;
+		await ensureMatinsNote(app, info, { matins: "both" }, false);
 		expect([...folders]).toEqual(["Festa", "Festa/Matins"]);
 		expect(files["Festa/Matins/St. Jerome.md"]).toMatch(/^# St\. Jerome\n/);
-		expect(files["Festa/Matins/St. Jerome.md"]).toContain("## Reading");
-
 		files["Festa/Matins/St. Jerome.md"] = "edited";
-		await stampFile(app, new TFile("Daily/2026-10-06.md"), "2026-09-30", s);
+		await ensureMatinsNote(app, info, { matins: "both" }, false);
 		expect(files["Festa/Matins/St. Jerome.md"]).toBe("edited");
-
-		await refreshFile(app, file, "2026-09-30", { ...s, matins: "la" });
-		expect(files["Festa/Matins/St. Jerome.md"]).toContain("## Lectio");
-		expect(files["Festa/Matins/St. Jerome.md"]).not.toContain("## Reading");
 	});
 
 	it("is stable when run twice", async () => {

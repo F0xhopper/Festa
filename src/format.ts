@@ -8,15 +8,11 @@ export type TitleLanguage = "both" | "la" | "en";
 export type Layout = "full" | "compact";
 
 export type MatinsLanguage = "both" | "la" | "en" | "off";
-/** "popup": an obsidian://festa link that opens the reading in a window, writing no files. "note": a wiki link to a note Festa creates. */
-export type MatinsMode = "popup" | "note";
 
 export interface FormatOptions {
 	titleLanguage: TitleLanguage;
 	fasting?: FastingDiscipline;
 	matins?: MatinsLanguage;
-	matinsFolder?: string;
-	matinsMode?: MatinsMode;
 	layout: Layout;
 	template: string;
 	frontmatterPrefix: string;
@@ -185,6 +181,7 @@ export const TOKENS = [
 	"pages", "date",
 ] as const;
 
+/** Where "Save as note" in the reading window keeps a reading. */
 export const DEFAULT_MATINS_FOLDER = "Festa/Matins";
 
 export function matinsNotePath(info: DayInfo, folder: string = DEFAULT_MATINS_FOLDER): string | null {
@@ -197,23 +194,13 @@ export function matinsUri(date: string): string {
 	return `obsidian://festa?matins=${date}`;
 }
 
-/**
- * The link to the day's Matins reading, labelled with whose reading it is when it belongs to a
- * commemoration: an obsidian://festa link (pop-up, no files) or a wiki link to a Festa note.
- */
-export function matinsLink(
-	info: DayInfo,
-	lang: MatinsLanguage,
-	titleLanguage: TitleLanguage,
-	folder?: string,
-	mode: MatinsMode = "popup",
-): string {
-	const path = matinsNotePath(info, folder);
-	if (!path || lang === "off" || !info.matins) return "";
+/** An obsidian://festa link that opens the day's Matins reading in a window, labelled with whose reading it is. */
+export function matinsLink(info: DayInfo, lang: MatinsLanguage, titleLanguage: TitleLanguage): string {
+	if (lang === "off" || !info.matins) return "";
 	const latin = titleLanguage === "la";
 	let label = latin ? "Lectio ad Matutinum" : "Matins reading";
 	if (info.matins.commemoration) label += ` · ${latin ? info.matins.source.title.la : info.matins.source.title.en}`;
-	return mode === "note" ? `[[${path.replace(/\.md$/, "")}|${label}]]` : `[${label}](${matinsUri(info.date)})`;
+	return `[${label}](${matinsUri(info.date)})`;
 }
 
 /** One lesson as paragraphs; a short opening line such as "Sermo sancti Leonis Papæ" is set in italics. */
@@ -248,8 +235,6 @@ export function tokens(
 	lang: TitleLanguage,
 	discipline: FastingDiscipline = "traditional",
 	matins: MatinsLanguage = "off",
-	matinsFolder: string = DEFAULT_MATINS_FOLDER,
-	matinsMode: MatinsMode = "popup",
 ): Record<string, string> {
 	const fast = fasting(info, discipline);
 	const en = info.readings?.en;
@@ -287,7 +272,7 @@ export function tokens(
 		epistle_la: la?.e ?? "",
 		gospel_la: la?.g ?? "",
 		lessons_la: la?.l.join("; ") ?? "",
-		matins: matinsLink(info, matins, lang, matinsFolder, matinsMode),
+		matins: matinsLink(info, matins, lang),
 		class: roman(info.celebration.rank),
 		class_num: String(info.celebration.rank),
 		colour: COLOUR_NAME[info.celebration.colour],
@@ -332,9 +317,9 @@ function fill(text: string, values: Record<string, string>): { text: string; use
  */
 export function renderCallout(
 	info: DayInfo,
-	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting" | "matins" | "matinsFolder" | "matinsMode">,
+	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting" | "matins">,
 ): string {
-	const values = tokens(info, opts.titleLanguage, opts.fasting, opts.matins, opts.matinsFolder, opts.matinsMode);
+	const values = tokens(info, opts.titleLanguage, opts.fasting, opts.matins);
 	const out: string[] = [];
 	for (const line of opts.template.split(/\r?\n/)) {
 		let used = 0;
