@@ -4,20 +4,20 @@
   "la": "Feria"
  },
  "commune:C10Pasc:4:w": {
-  "en": "IV Mass of the B. V. M. – Salve, Sancta Parens",
-  "la": "4 Missa B. V. M. – Salve, Sancta Parens"
+  "en": "Our Lady on Saturday in Paschaltide",
+  "la": "Sancta Maria in Sabbato tempore Paschali"
  },
  "commune:C10b:4:w": {
-  "en": "II Mass of the B. V. M. – Vultum Tuum",
-  "la": "2 Missa B. V. M. – Vultum Tuum"
+  "en": "Our Lady on Saturday (Vultum tuum)",
+  "la": "Sancta Maria in Sabbato (Vultum tuum)"
  },
  "commune:C10c:4:w": {
-  "en": "III Mass of the B. V. M. – Salve, Sancta Parens",
-  "la": "3 Missa B. V. M. – Salve, Sancta Parens"
+  "en": "Our Lady on Saturday (Salve, Sancta Parens)",
+  "la": "Sancta Maria in Sabbato (Salve, Sancta Parens)"
  },
  "commune:C10t:4:w": {
-  "en": "V Mass of the B. V. M. – Salve, Sancta Parens",
-  "la": "5 Missa B. V. M. – Salve, Sancta Parens"
+  "en": "Our Lady on Saturday (Salve, Sancta Parens)",
+  "la": "Sancta Maria in Sabbato (Salve, Sancta Parens)"
  },
  "sancti:01-01:1:w": {
   "en": "Octave Day of Christmas",
@@ -1149,7 +1149,7 @@
  },
  "sancti:11-02m1:1:b": {
   "en": "Commemoration of All Souls",
-  "la": "In Commemoratione Omnium Fidelium Defunctorum Ad primam Missam"
+  "la": "In Commemoratione Omnium Fidelium Defunctorum"
  },
  "sancti:11-02m2:1:b": {
   "en": "Commemoration of All Souls – Second Mass",
@@ -1333,7 +1333,7 @@
  },
  "sancti:12-25m1:1:w": {
   "en": "The Nativity of Our Lord",
-  "la": "In Nativitate Domini in nocte"
+  "la": "In Nativitate Domini"
  },
  "sancti:12-26:2:r": {
   "en": "St. Stephen",

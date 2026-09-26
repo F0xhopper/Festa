@@ -118,7 +118,9 @@ def main() -> None:
     from api.constants.en.pages import PAGES  # noqa: E402
 
     years = parse_years(args.years)
-    overrides = {k: v for k, v in json.loads(OVERRIDES.read_text()).items() if not k.startswith("_")}
+    raw_overrides = json.loads(OVERRIDES.read_text())
+    overrides = {k: v for k, v in raw_overrides.items() if not k.startswith("_")}
+    title_overrides = raw_overrides.get("_titles", {})
     titles: dict[str, dict[str, str]] = {}
     (args.out / "years").mkdir(parents=True, exist_ok=True)
 
@@ -196,6 +198,10 @@ def main() -> None:
         write_json(args.out / "years" / f"{year}.json", rows, rows_per_line=True)
         print(f"{year}: {len(rows)} days")
 
+    for obs_id, repl in title_overrides.items():
+        if obs_id not in titles:
+            fail(f"title override for unknown id {obs_id}")
+        titles[obs_id].update(repl)
     for obs_id, t in titles.items():
         for lang in LANGS:
             if lang not in t:

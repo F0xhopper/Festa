@@ -1,14 +1,42 @@
 {
- "_doc": "Corrections applied on top of Missale Meum output. Each entry replaces the row for that date. Rank and colour are read from the observance id (…:<rank>:<colour>). Report each upstream and delete it once fixed there.",
+ "_doc": "Corrections applied on top of Missale Meum output. Each entry replaces the row for that date. Rank and colour are read from the observance id (…:<rank>:<colour>). Report each upstream and delete it once fixed there. '_titles' replaces display titles for an observance id: upstream names some days after one of their Masses.",
+ "_titles": {
+  "sancti:12-25m1:1:w": {
+   "la": "In Nativitate Domini"
+  },
+  "sancti:11-02m1:1:b": {
+   "la": "In Commemoratione Omnium Fidelium Defunctorum"
+  },
+  "commune:C10b:4:w": {
+   "en": "Our Lady on Saturday (Vultum tuum)",
+   "la": "Sancta Maria in Sabbato (Vultum tuum)"
+  },
+  "commune:C10c:4:w": {
+   "en": "Our Lady on Saturday (Salve, Sancta Parens)",
+   "la": "Sancta Maria in Sabbato (Salve, Sancta Parens)"
+  },
+  "commune:C10Pasc:4:w": {
+   "en": "Our Lady on Saturday in Paschaltide",
+   "la": "Sancta Maria in Sabbato tempore Paschali"
+  },
+  "commune:C10t:4:w": {
+   "en": "Our Lady on Saturday (Salve, Sancta Parens)",
+   "la": "Sancta Maria in Sabbato (Salve, Sancta Parens)"
+  }
+ },
  "2027-03-19": {
   "celebration": "sancti:03-19:1:w",
-  "commemorations": ["tempora:Quad5-5Feria:3:v"],
+  "commemorations": [
+   "tempora:Quad5-5Feria:3:v"
+  ],
   "displaced": [],
   "reason": "St Joseph (class I) falls on Friday of Passion Week. Missale Meum's rule_seven_sorrows_on_friday_after_passion_sunday returns before precedence is checked, so the class III feria wins. Rubricae generales 1960: a class I feast outranks a class III Lenten feria, which is commemorated."
  },
  "2032-03-19": {
   "celebration": "sancti:03-19:1:w",
-  "commemorations": ["tempora:Quad5-5Feria:3:v"],
+  "commemorations": [
+   "tempora:Quad5-5Feria:3:v"
+  ],
   "displaced": [],
   "reason": "Same as 2027-03-19."
  }

@@ -39,7 +39,9 @@ def round_trip(year: int, titles, rows) -> int:
 
     live = requests.get(API.format(year=year), timeout=60).json()
     live_by = {d["id"]: d for d in live}
-    overrides = json.loads((Path(__file__).parent / "overrides.json").read_text())
+    raw = json.loads((Path(__file__).parent / "overrides.json").read_text())
+    overrides = {k: v for k, v in raw.items() if not k.startswith("_")}
+    renamed = {k: v.get("en") for k, v in raw.get("_titles", {}).items() if "en" in v}
     diffs = 0
     for iso, cel, rank, colour, comms, displaced, _pages, _wk in rows:
         l = live_by.get(iso)
@@ -62,6 +64,9 @@ def round_trip(year: int, titles, rows) -> int:
             "comms": [c["title"] for c in l.get("commemorations", [])],
             "displaced": [c["title"] for c in l.get("displaced", [])],
         }
+        if cel in renamed:
+            theirs["title"] = titles[cel]["en"]
+        theirs["comms"] = [titles[c[0]]["en"] if c[0] in renamed else t for c, t in zip(comms, theirs["comms"])]
         for k in ours:
             if ours[k] != theirs[k]:
                 print(f"  {iso} {k}: bundled={ours[k]!r} live={theirs[k]!r}")
