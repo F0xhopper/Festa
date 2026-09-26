@@ -2,11 +2,11 @@ import { type Editor, type MarkdownFileInfo, type MarkdownView, Notice, Plugin, 
 import { dataRange, lookup } from "./calendar";
 import { todayISO } from "./dates";
 import { allDailyNotes, dailyNoteLocation, dateForFile } from "./daily-notes";
-import { frontmatterFields, renderCallout } from "./format";
+import { defaultTemplate, frontmatterFields, LEGACY_TEMPLATES, renderCallout } from "./format";
 import { ConfirmModal } from "./modals";
 import { hasMarker } from "./note-text";
 import { DEFAULT_SETTINGS, type FestaSettings, FestaSettingTab } from "./settings";
-import { stampFile, type StampResult } from "./stamp";
+import { refreshFile, stampFile, type StampResult } from "./stamp";
 
 /** Re-check shortly after stamping in case a template plugin rewrote the new file. */
 const GUARD_DELAY_MS = 1500;
@@ -47,6 +47,18 @@ export default class FestaPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "refresh-feast-for-note",
+			name: "Refresh feast for this note",
+			checkCallback: (checking) => {
+				const file = this.app.workspace.getActiveFile();
+				const date = file ? dateForFile(file, this.location()) : null;
+				if (!file || !date) return false;
+				if (!checking) void this.refreshWithNotice(file, date);
+				return true;
+			},
+		});
+
+		this.addCommand({
 			id: "insert-feast-callout-at-cursor",
 			name: "Insert feast callout here",
 			editorCallback: (editor: Editor, ctx: MarkdownView | MarkdownFileInfo) => {
@@ -66,6 +78,12 @@ export default class FestaPlugin extends Plugin {
 			callback: () => void this.backfill(),
 		});
 
+		this.addCommand({
+			id: "refresh-feasts-in-all-daily-notes",
+			name: "Refresh feasts in all daily notes",
+			callback: () => this.refreshAll(),
+		});
+
 		this.app.workspace.onLayoutReady(() => {
 			this.registerEvent(this.app.vault.on("create", (file) => this.onCreate(file)));
 		});
@@ -78,6 +96,11 @@ export default class FestaPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) as Partial<FestaSettings> | null) };
+		// Upgrade an unedited 1.0.0 template to the current default.
+		if (LEGACY_TEMPLATES.includes(this.settings.template)) {
+			this.settings.template = defaultTemplate(this.settings.layout, this.settings.titleLanguage);
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings(): Promise<void> {
@@ -136,6 +159,62 @@ export default class FestaPlugin extends Plugin {
 		}
 	}
 
+	private async refreshWithNotice(file: TFile, date: string): Promise<void> {
+		try {
+			const result = await refreshFile(this.app, file, date, this.settings);
+			new Notice(result === "out-of-range" ? `Festa: no bundled data for ${date.slice(0, 4)}.` : "Festa: feast refreshed.");
+		} catch (err) {
+			console.error("Festa: could not refresh the feast", file.path, err);
+			new Notice("Festa: could not refresh the feast. See the developer console.");
+		}
+	}
+
+	private refreshAll(): void {
+		if (this.backfillRunning) {
+			new Notice("Festa: already updating notes, please wait.");
+			return;
+		}
+		const notes = allDailyNotes(this.app.vault, this.location()).filter(({ date }) => lookup(date) !== undefined);
+		if (notes.length === 0) {
+			new Notice("Festa: no daily notes to refresh.");
+			return;
+		}
+		new ConfirmModal(
+			this.app,
+			"Refresh feasts in all daily notes",
+			[
+				`${notes.length} daily notes will have Festa's callout and properties removed and added again with your current settings.`,
+				"Anything you typed inside the feast callout will be lost. The rest of each note is not touched.",
+			],
+			`Refresh ${notes.length} notes`,
+			() => void this.runExclusive(async () => {
+				const progress = new Notice(`Festa: refreshing… 0/${notes.length}`, 0);
+				let failed = 0;
+				for (const [i, { file, date }] of notes.entries()) {
+					try {
+						await refreshFile(this.app, file, date, this.settings);
+					} catch (err) {
+						failed++;
+						console.error("Festa: could not refresh the feast", file.path, err);
+					}
+					if ((i + 1) % 25 === 0) progress.setMessage(`Festa: refreshing… ${i + 1}/${notes.length}`);
+				}
+				progress.hide();
+				new Notice(`Festa: refreshed ${notes.length - failed} notes${failed ? `, ${failed} failed (see console)` : ""}.`);
+			}),
+		).open();
+	}
+
+	private async runExclusive(task: () => Promise<void>): Promise<void> {
+		if (this.backfillRunning) return;
+		this.backfillRunning = true;
+		try {
+			await task();
+		} finally {
+			this.backfillRunning = false;
+		}
+	}
+
 	private async backfill(): Promise<void> {
 		if (this.backfillRunning) {
 			new Notice("Festa: already adding feasts, please wait.");
@@ -171,13 +250,7 @@ export default class FestaPlugin extends Plugin {
 	}
 
 	private async runBackfill(todo: { file: TFile; date: string }[]): Promise<void> {
-		if (this.backfillRunning) return;
-		this.backfillRunning = true;
-		try {
-			await this.stampAll(todo);
-		} finally {
-			this.backfillRunning = false;
-		}
+		await this.runExclusive(() => this.stampAll(todo));
 	}
 
 	private async stampAll(todo: { file: TFile; date: string }[]): Promise<void> {

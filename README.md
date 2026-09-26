@@ -5,22 +5,20 @@ Festa adds the traditional Roman calendar to your Obsidian daily notes. Each new
 Everything is bundled with the plugin, so it works offline and never contacts a server.
 
 ```markdown
----
-feast: Ember Saturday of September
-feast_la: Sabbato Quattuor Temporum Septembris
-feast_class: 2
-feast_color: violet
-feast_comm:
-  - Sts. Cyprian & Justina
-feast_season: Time after Pentecost
-feast_week: 17
----
-> [!festa|violet] Sabbato Quattuor Temporum Septembris
-> **Ember Saturday of September** · Class II · violet
-> Comm. Ss. Cypriani et Justinæ Martyrum (Sts. Cyprian & Justina)
-> Sabbato · 17th week after Pentecost · a.d. VI Kal. Oct.
-> Missal: Angelus Press p. 785 · Baronius p. 708 · Lasance p. 699
+> [!festa|violet] Ember Saturday of September
+> *Sabbato Quattuor Temporum Septembris*
+>
+> II class · 17th week after Pentecost · a.d. VI Kal. Oct.
+> Commemoration: Sts. Cyprian & Justina
 ```
+
+Or, with the compact layout:
+
+```markdown
+> [!festa|violet] Ember Saturday of September · II class · Comm. Sts. Cyprian & Justina
+```
+
+Festa can also add the feast as note properties (`feast`, `feast_la`, `feast_class`, `feast_color`, `feast_comm`, `feast_season`, `feast_week`, `feast_missal`) for Dataview or Bases. Turn them off in the settings if you only want the callout.
 
 The callout is tinted with the colour of the day: violet, green, red, white, black or rose.
 
@@ -30,6 +28,7 @@ The callout is tinted with the colour of the day: violet, green, red, white, bla
 - **Insert feast for this note** adds the feast to the daily note you have open, if it does not have one yet.
 - **Insert feast callout here** puts the callout at the cursor in any note. It uses the note's date when the note is a daily note, and today otherwise.
 - **Add feasts to all daily notes** fills in every existing daily note that has no feast yet. It asks before editing anything and never touches a note twice.
+- **Refresh feast for this note** and **Refresh feasts in all daily notes** remove what Festa added and add it again with your current settings. Use them after changing the layout, template or language. They leave the rest of each note alone.
 
 The properties let you query the calendar with Dataview or Bases, for example:
 
@@ -45,7 +44,8 @@ SORT file.name ASC
 | Setting | What it does |
 |---|---|
 | Title language | Latin and English, Latin only, or English only. |
-| Callout template | The lines of the callout, with tokens such as `{title_la}`, `{class}`, `{comm_both}`, `{week_label}`, `{roman_date}` and `{pages}`. A line whose tokens are all empty is left out, so the commemoration line disappears on days without one. |
+| Layout | Full puts each detail on its own line. Compact fits the feast on one line. |
+| Callout template | The lines of the callout, with tokens such as `{title_en}`, `{title_la_sub}`, `{class}`, `{comm_en}`, `{week_label}`, `{roman_date}` and `{pages}`. A line whose tokens are all empty is left out, so the commemoration line disappears on days without one. Wrap an optional part in `[? … ?]` to drop just that part, as in `[? · Comm. {comm_en}?]`. |
 | Insert callout / Insert properties | Turn either part off. |
 | Property prefix | Change `feast`, `feast_la` … to another prefix if `feast` clashes with your own properties. |
 | Add automatically | Turn off to add feasts only through the commands. |

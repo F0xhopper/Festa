@@ -1,7 +1,7 @@
 import type { App, TFile } from "obsidian";
 import { lookup } from "./calendar";
-import { frontmatterFields, renderCallout, type TitleLanguage } from "./format";
-import { CALLOUT_MARKER, hasMarker, insertAfterFrontmatter, splitFrontmatter } from "./note-text";
+import { FIELD_SUFFIXES, frontmatterFields, renderCallout, type TitleLanguage } from "./format";
+import { CALLOUT_MARKER, dropEmptyFrontmatter, hasMarker, insertAfterFrontmatter, removeCallout, splitFrontmatter } from "./note-text";
 
 export interface StampSettings {
 	titleLanguage: TitleLanguage;
@@ -39,4 +39,22 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
 		});
 	}
 	return "stamped";
+}
+
+/**
+ * Remove everything Festa added to a note (its callout and any of its properties under the
+ * current prefix), then add the feast again with the current settings.
+ */
+export async function refreshFile(app: App, file: TFile, date: string, s: StampSettings): Promise<StampResult> {
+	if (!lookup(date)) return "out-of-range";
+	const current = await app.vault.read(file);
+	const [head] = splitFrontmatter(current);
+	const keys = FIELD_SUFFIXES.map((suffix) => s.frontmatterPrefix + suffix);
+	if (head && keys.some((k) => new RegExp(`^${k}\\s*:`, "m").test(head))) {
+		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+			for (const k of keys) delete fm[k];
+		});
+	}
+	await app.vault.process(file, (data) => dropEmptyFrontmatter(removeCallout(data)));
+	return stampFile(app, file, date, s);
 }

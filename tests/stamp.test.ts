@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { TFile } from "obsidian";
 import type { App } from "obsidian";
-import { DEFAULT_TEMPLATES } from "../src/format";
+import { defaultTemplate } from "../src/format";
 import { splitFrontmatter } from "../src/note-text";
-import { stampFile, type StampSettings } from "../src/stamp";
+import { refreshFile, stampFile, type StampSettings } from "../src/stamp";
 
 /** A fake vault holding note text, with a naive processFrontMatter good enough for flat YAML. */
 function fakeApp(files: Record<string, string>) {
@@ -33,7 +33,7 @@ function fakeApp(files: Record<string, string>) {
 
 const SETTINGS: StampSettings = {
 	titleLanguage: "both",
-	template: DEFAULT_TEMPLATES.both,
+	template: defaultTemplate("full", "both"),
 	frontmatterPrefix: "feast",
 	insertFrontmatter: true,
 	insertCallout: true,
@@ -51,8 +51,8 @@ describe("stampFile", () => {
 		const once = files["Daily/2026-09-26.md"];
 		expect(once).toMatch(/^---\nfeast: Ember Saturday of September\n/);
 		expect(once).toContain("feast_week: 17");
-		expect(once).toContain("---\n> [!festa|violet] Sabbato Quattuor Temporum Septembris\n");
-		expect(once).toContain("> Missal: Angelus Press p. 785 · Baronius p. 708 · Lasance p. 699\n\n## Tasks\n");
+		expect(once).toContain("---\n> [!festa|violet] Ember Saturday of September\n");
+		expect(once).toContain("> Commemoration: Sts. Cyprian & Justina\n\n## Tasks\n");
 		expect(once.endsWith(TEMPLATE)).toBe(true);
 
 		expect(await stampFile(app, file, "2026-09-26", SETTINGS)).toBe("skipped");
@@ -63,7 +63,7 @@ describe("stampFile", () => {
 		const files = { "Daily/2026-12-25.md": "---\nmood: good\n---\nbody\n" };
 		await stampFile(fakeApp(files), new TFile("Daily/2026-12-25.md"), "2026-12-25", SETTINGS);
 		expect(files["Daily/2026-12-25.md"]).toMatch(/^---\nmood: good\nfeast: The Nativity of Our Lord\n/);
-		expect(files["Daily/2026-12-25.md"]).toContain("> [!festa|white] In Nativitate Domini\n");
+		expect(files["Daily/2026-12-25.md"]).toContain("> [!festa|white] The Nativity of Our Lord\n");
 	});
 
 	it("honours the callout-only and properties-only settings", async () => {
@@ -87,5 +87,59 @@ describe("stampFile", () => {
 	it("does not add a second callout when only the callout is present", async () => {
 		const files = { "n.md": "> [!festa|green] Something\n\nbody\n" };
 		expect(await stampFile(fakeApp(files), new TFile("n.md"), "2026-09-26", SETTINGS)).toBe("skipped");
+	});
+});
+
+const OLD_NOTE = [
+	"---",
+	"mood: good",
+	"feast: Ember Saturday of September",
+	"feast_la: Sabbato Quattuor Temporum Septembris",
+	"feast_class: 2",
+	"---",
+	"> [!festa|violet] Sabbato Quattuor Temporum Septembris",
+	"> **Ember Saturday of September** · Class II · violet",
+	"> Missal: Angelus Press p. 785 · Baronius p. 708 · Lasance p. 699",
+	"",
+	"## Tasks",
+	"",
+].join("\n");
+
+describe("refreshFile", () => {
+	it("replaces the old callout and removes properties when they are turned off", async () => {
+		const files = { "Daily/2026-09-26.md": OLD_NOTE };
+		const s = { ...SETTINGS, insertFrontmatter: false };
+		expect(await refreshFile(fakeApp(files), new TFile("Daily/2026-09-26.md"), "2026-09-26", s)).toBe("stamped");
+		expect(files["Daily/2026-09-26.md"]).toBe(
+			[
+				"---",
+				"mood: good",
+				"---",
+				"> [!festa|violet] Ember Saturday of September",
+				"> *Sabbato Quattuor Temporum Septembris*",
+				">",
+				"> II class · 17th week after Pentecost · a.d. VI Kal. Oct.",
+				"> Commemoration: Sts. Cyprian & Justina",
+				"",
+				"## Tasks",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("drops the frontmatter block when only Festa's properties were in it", async () => {
+		const files = { "n.md": OLD_NOTE.replace("mood: good\n", "") };
+		await refreshFile(fakeApp(files), new TFile("n.md"), "2026-09-26", { ...SETTINGS, insertFrontmatter: false });
+		expect(files["n.md"].startsWith("> [!festa|violet] Ember Saturday of September\n")).toBe(true);
+	});
+
+	it("is stable when run twice", async () => {
+		const files = { "n.md": OLD_NOTE };
+		const app = fakeApp(files);
+		await refreshFile(app, new TFile("n.md"), "2026-09-26", SETTINGS);
+		const once = files["n.md"];
+		await refreshFile(app, new TFile("n.md"), "2026-09-26", SETTINGS);
+		expect(files["n.md"]).toBe(once);
+		expect((once.match(/\[!festa/g) ?? []).length).toBe(1);
 	});
 });

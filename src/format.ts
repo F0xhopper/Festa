@@ -2,37 +2,83 @@ import { roman } from "./seasons";
 import { COLOUR_NAME, type DayInfo } from "./types";
 
 export type TitleLanguage = "both" | "la" | "en";
+export type Layout = "full" | "compact";
 
 export interface FormatOptions {
 	titleLanguage: TitleLanguage;
+	layout: Layout;
 	template: string;
 	frontmatterPrefix: string;
 }
 
-export const DEFAULT_TEMPLATES: Record<TitleLanguage, string> = {
-	both: [
+/**
+ * Template syntax: {token} is replaced by its value. [? … ?] is an optional segment,
+ * dropped when every token inside it is empty. A line that uses tokens and whose tokens
+ * all came out empty is dropped.
+ */
+export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = {
+	full: {
+		both: [
+			"> [!festa|{colour}] {title_en}",
+			"> *{title_la_sub}*",
+			">",
+			"> {class} class · {week_label} · {roman_date}",
+			"> Commemoration: {comm_en}",
+		].join("\n"),
+		la: [
+			"> [!festa|{colour}] {title_la}",
+			"> Classis {class} · {week_label_la} · {roman_date}",
+			"> Commemoratio: {comm_la}",
+		].join("\n"),
+		en: [
+			"> [!festa|{colour}] {title_en}",
+			"> {class} class · {week_label} · {roman_date}",
+			"> Commemoration: {comm_en}",
+		].join("\n"),
+	},
+	compact: {
+		both: "> [!festa|{colour}] {title_en} · {class} class[? · Comm. {comm_en}?]",
+		la: "> [!festa|{colour}] {title_la} · Classis {class}[? · Comm. {comm_la}?]",
+		en: "> [!festa|{colour}] {title_en} · {class} class[? · Comm. {comm_en}?]",
+	},
+};
+
+/** Templates shipped in 1.0.0, so saved copies can be upgraded to the new defaults. */
+export const LEGACY_TEMPLATES: string[] = [
+	[
 		"> [!festa|{colour}] {title_la}",
 		"> **{title_en}** · Class {class} · {colour}",
 		"> Comm. {comm_both}",
 		"> {weekday_la} · {week_label} · {roman_date}",
 		"> Missal: {pages}",
 	].join("\n"),
-	la: [
+	[
 		"> [!festa|{colour}] {title_la} · Classis {class}",
 		"> Comm. {comm_la}",
 		"> {weekday_la} · {week_label_la} · {roman_date}",
 		"> Missal: {pages}",
 	].join("\n"),
-	en: [
+	[
 		"> [!festa|{colour}] {title_en} · Class {class} · {colour}",
 		"> Comm. {comm_en}",
 		"> {weekday_la} · {week_label} · {roman_date}",
 		"> Missal: {pages}",
 	].join("\n"),
-};
+];
+
+export function defaultTemplate(layout: Layout, lang: TitleLanguage): string {
+	return DEFAULT_TEMPLATES[layout][lang];
+}
+
+export function isDefaultTemplate(template: string): boolean {
+	return (
+		LEGACY_TEMPLATES.includes(template) ||
+		Object.values(DEFAULT_TEMPLATES).some((byLang) => Object.values(byLang).includes(template))
+	);
+}
 
 export const TOKENS = [
-	"title", "title_alt", "title_la", "title_en", "class", "class_num", "colour", "colour_code",
+	"title", "title_alt", "title_la", "title_en", "title_la_sub", "class", "class_num", "colour", "colour_code",
 	"comm", "comm_alt", "comm_la", "comm_en", "comm_both", "displaced", "weekday_la",
 	"week_label", "week_label_la", "week", "season", "season_la", "roman_date", "roman_date_long",
 	"pages", "date",
@@ -54,6 +100,7 @@ export function tokens(info: DayInfo, lang: TitleLanguage): Record<string, strin
 		title_alt: secondary ? info.celebration.title[secondary] : "",
 		title_la: info.celebration.title.la,
 		title_en: info.celebration.title.en,
+		title_la_sub: info.celebration.title.la === info.celebration.title.en ? "" : info.celebration.title.la,
 		class: roman(info.celebration.rank),
 		class_num: String(info.celebration.rank),
 		colour: COLOUR_NAME[info.celebration.colour],
@@ -77,9 +124,23 @@ export function tokens(info: DayInfo, lang: TitleLanguage): Record<string, strin
 	};
 }
 
+function fill(text: string, values: Record<string, string>): { text: string; used: number; filled: number } {
+	let used = 0;
+	let filled = 0;
+	const out = text.replace(/\{([a-z_]+)\}/g, (whole, name: string) => {
+		if (!(name in values)) return whole;
+		used++;
+		const v = values[name] ?? "";
+		if (v) filled++;
+		return v;
+	});
+	return { text: out, used, filled };
+}
+
 /**
- * Fill the template. A line that uses at least one token and whose tokens all came out
- * empty is dropped, so "Comm. {comm_both}" disappears on days without a commemoration.
+ * Fill the template. Optional segments [? … ?] vanish when all their tokens are empty.
+ * A line that uses at least one token and whose tokens all came out empty is dropped,
+ * so "Commemoration: {comm_en}" disappears on days without a commemoration.
  * Unknown tokens are left as written so a typo is visible.
  */
 export function renderCallout(info: DayInfo, opts: Pick<FormatOptions, "titleLanguage" | "template">): string {
@@ -88,18 +149,23 @@ export function renderCallout(info: DayInfo, opts: Pick<FormatOptions, "titleLan
 	for (const line of opts.template.split(/\r?\n/)) {
 		let used = 0;
 		let filled = 0;
-		const rendered = line.replace(/\{([a-z_]+)\}/g, (whole, name: string) => {
-			if (!(name in values)) return whole;
-			used++;
-			const v = values[name] ?? "";
-			if (v) filled++;
-			return v;
+		const withGroups = line.replace(/\[\?([\s\S]*?)\?\]/g, (_whole, inner: string) => {
+			const r = fill(inner, values);
+			used += r.used;
+			filled += r.filled;
+			return r.used > 0 && r.filled === 0 ? "" : r.text;
 		});
+		const r = fill(withGroups, values);
+		used += r.used;
+		filled += r.filled;
 		if (used > 0 && filled === 0) continue;
-		out.push(rendered);
+		out.push(r.text);
 	}
 	return out.join("\n");
 }
+
+/** Every property suffix Festa may write, so a refresh can remove them all. */
+export const FIELD_SUFFIXES = ["", "_la", "_class", "_color", "_comm", "_season", "_week", "_missal"];
 
 export function frontmatterFields(info: DayInfo, prefix: string): Record<string, string | number | string[]> {
 	const fields: Record<string, string | number | string[]> = {
@@ -111,5 +177,7 @@ export function frontmatterFields(info: DayInfo, prefix: string): Record<string,
 	if (info.commemorations.length) fields[`${prefix}_comm`] = info.commemorations.map((c) => c.title.en);
 	fields[`${prefix}_season`] = info.seasonName.en;
 	if (info.week !== null) fields[`${prefix}_week`] = info.week;
+	const pages = tokens(info, "en").pages;
+	if (pages) fields[`${prefix}_missal`] = pages;
 	return fields;
 }

@@ -30,3 +30,23 @@ export function hasMarker(data: string, prefix: string): boolean {
 	const key = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:`, "m");
 	return (head !== "" && key.test(head)) || body.includes(CALLOUT_MARKER);
 }
+
+/** Remove Festa's callout (the "> [!festa" line and the quoted lines under it) and one blank line after it. */
+export function removeCallout(data: string): string {
+	const [head, body] = splitFrontmatter(data);
+	const lines = body.split("\n");
+	const start = lines.findIndex((l) => l.startsWith("> " + CALLOUT_MARKER) || l.startsWith(">" + CALLOUT_MARKER));
+	if (start < 0) return data;
+	let end = start + 1;
+	while (end < lines.length && (lines[end] ?? "").startsWith(">")) end++;
+	if (end < lines.length && (lines[end] ?? "").trim() === "") end++;
+	lines.splice(start, end - start);
+	return head + lines.join("\n");
+}
+
+/** Drop a frontmatter block that has no keys left ("---\n---\n"). */
+export function dropEmptyFrontmatter(data: string): string {
+	const [head, body] = splitFrontmatter(data);
+	if (head && /^---\r?\n\s*---\s*$/.test(head)) return body;
+	return data;
+}

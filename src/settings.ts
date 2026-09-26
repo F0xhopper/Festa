@@ -1,11 +1,12 @@
 import { type App, PluginSettingTab, Setting } from "obsidian";
 import { dataRange } from "./calendar";
 import { dailyNoteLocation } from "./daily-notes";
-import { DEFAULT_TEMPLATES, TOKENS, type TitleLanguage } from "./format";
+import { defaultTemplate, isDefaultTemplate, type Layout, TOKENS, type TitleLanguage } from "./format";
 import type FestaPlugin from "./main";
 
 export interface FestaSettings {
 	titleLanguage: TitleLanguage;
+	layout: Layout;
 	template: string;
 	insertFrontmatter: boolean;
 	frontmatterPrefix: string;
@@ -18,7 +19,8 @@ export interface FestaSettings {
 
 export const DEFAULT_SETTINGS: FestaSettings = {
 	titleLanguage: "both",
-	template: DEFAULT_TEMPLATES.both,
+	layout: "full",
+	template: defaultTemplate("full", "both"),
 	insertFrontmatter: true,
 	frontmatterPrefix: "feast",
 	insertCallout: true,
@@ -53,9 +55,23 @@ export class FestaSettingTab extends PluginSettingTab {
 					.addOptions({ both: "Latin and English", la: "Latin", en: "English" })
 					.setValue(s.titleLanguage)
 					.onChange(async (value) => {
-						const next = value as TitleLanguage;
-						if (s.template === DEFAULT_TEMPLATES[s.titleLanguage]) s.template = DEFAULT_TEMPLATES[next];
-						s.titleLanguage = next;
+						s.titleLanguage = value as TitleLanguage;
+						if (isDefaultTemplate(s.template)) s.template = defaultTemplate(s.layout, s.titleLanguage);
+						await this.plugin.saveSettings();
+						this.display();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Layout")
+			.setDesc("Full puts each detail on its own line. Compact fits the feast on one line.")
+			.addDropdown((d) =>
+				d
+					.addOptions({ full: "Full", compact: "Compact" })
+					.setValue(s.layout)
+					.onChange(async (value) => {
+						s.layout = value as Layout;
+						if (isDefaultTemplate(s.template)) s.template = defaultTemplate(s.layout, s.titleLanguage);
 						await this.plugin.saveSettings();
 						this.display();
 					}),
@@ -64,7 +80,7 @@ export class FestaSettingTab extends PluginSettingTab {
 		const templateSetting = new Setting(containerEl)
 			.setName("Callout template")
 			.setDesc(
-				`Tokens: ${TOKENS.map((t) => `{${t}}`).join(" ")}. A line whose tokens are all empty is left out.`,
+				`Tokens: ${TOKENS.map((t) => `{${t}}`).join(" ")}. A line whose tokens are all empty is left out, and so is an optional part written as [? … ?]. Changing language or layout replaces the template unless you have edited it.`,
 			)
 			.addTextArea((t) => {
 				t.setValue(s.template).onChange(async (value) => {
@@ -79,7 +95,7 @@ export class FestaSettingTab extends PluginSettingTab {
 					.setIcon("rotate-ccw")
 					.setTooltip("Reset to default")
 					.onClick(async () => {
-						s.template = DEFAULT_TEMPLATES[s.titleLanguage];
+						s.template = defaultTemplate(s.layout, s.titleLanguage);
 						await this.plugin.saveSettings();
 						this.display();
 					}),
