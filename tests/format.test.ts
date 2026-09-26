@@ -9,10 +9,9 @@ describe("renderCallout, full layout", () => {
 		expect(renderCallout(today(), { titleLanguage: "both", template: defaultTemplate("full", "both") })).toBe(
 			[
 				"> [!festa|violet] Ember Saturday of September",
-				"> *Sabbato Quattuor Temporum Septembris*",
-				">",
-				"> II class · 17th week after Pentecost · a.d. VI Kal. Oct.",
+				"> Second-class Ember day · 17th week after Pentecost",
 				"> Commemoration: Sts. Cyprian & Justina",
+				"> *Sabbato Quattuor Temporum Septembris · a.d. VI Kal. Oct.*",
 			].join("\n"),
 		);
 	});
@@ -22,21 +21,20 @@ describe("renderCallout, full layout", () => {
 		expect(out).toBe(
 			[
 				"> [!festa|white] The Nativity of Our Lord",
-				"> *In Nativitate Domini*",
-				">",
-				"> I class · Octave of Christmas · a.d. VIII Kal. Ian.",
+				"> First-class feast · Octave of Christmas",
+				"> *In Nativitate Domini · a.d. VIII Kal. Ian.*",
 			].join("\n"),
 		);
 	});
 
-	it("drops the Latin subtitle when it matches the English title", () => {
-		const feria = Object.values({ a: lookup("2026-07-07")!, b: lookup("2026-07-08")!, c: lookup("2026-07-09")! }).find(
-			(d) => d.celebration.title.en === d.celebration.title.la,
+	it("renders St Jerome with the corrected Latin", () => {
+		expect(renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both") })).toBe(
+			[
+				"> [!festa|white] St. Jerome",
+				"> Third-class feast · 18th week after Pentecost",
+				"> *S. Hieronymi Presbyteri Confessoris et Ecclesiæ Doctoris · prid. Kal. Oct.*",
+			].join("\n"),
 		);
-		if (!feria) return;
-		const out = renderCallout(feria, { titleLanguage: "both", template: defaultTemplate("full", "both") });
-		expect(out).not.toContain("**");
-		expect(out.split("\n")[1]).toBe(">");
 	});
 
 	it("renders the Latin and English templates", () => {
@@ -56,10 +54,10 @@ describe("renderCallout, full layout", () => {
 describe("renderCallout, compact layout and optional segments", () => {
 	it("fits on one line", () => {
 		expect(renderCallout(today(), { titleLanguage: "both", template: defaultTemplate("compact", "both") })).toBe(
-			"> [!festa|violet] Ember Saturday of September · II class · Comm. Sts. Cyprian & Justina",
+			"> [!festa|violet] Ember Saturday of September · Second-class Ember day · Comm. Sts. Cyprian & Justina",
 		);
 		expect(renderCallout(lookup("2026-12-25")!, { titleLanguage: "both", template: defaultTemplate("compact", "both") })).toBe(
-			"> [!festa|white] The Nativity of Our Lord · I class",
+			"> [!festa|white] The Nativity of Our Lord · First-class feast",
 		);
 	});
 

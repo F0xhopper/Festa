@@ -6,16 +6,15 @@ Everything is bundled with the plugin, so it works offline and never contacts a 
 
 ```markdown
 > [!festa|violet] Ember Saturday of September
-> *Sabbato Quattuor Temporum Septembris*
->
-> II class · 17th week after Pentecost · a.d. VI Kal. Oct.
+> Second-class Ember day · 17th week after Pentecost
 > Commemoration: Sts. Cyprian & Justina
+> *Sabbato Quattuor Temporum Septembris · a.d. VI Kal. Oct.*
 ```
 
 Or, with the compact layout:
 
 ```markdown
-> [!festa|violet] Ember Saturday of September · II class · Comm. Sts. Cyprian & Justina
+> [!festa|violet] Ember Saturday of September · Second-class Ember day · Comm. Sts. Cyprian & Justina
 ```
 
 Festa can also add the feast as note properties (`feast`, `feast_la`, `feast_class`, `feast_color`, `feast_comm`, `feast_season`, `feast_week`, `feast_missal`) for Dataview or Bases. Turn them off in the settings if you only want the callout.
@@ -46,7 +45,7 @@ SORT file.name ASC
 |---|---|
 | Title language | Latin and English, Latin only, or English only. |
 | Layout | Full puts each detail on its own line. Compact fits the feast on one line. |
-| Callout template | The lines of the callout, with tokens such as `{title_en}`, `{title_la_sub}`, `{class}`, `{comm_en}`, `{week_label}`, `{roman_date}` and `{pages}`. A line whose tokens are all empty is left out, so the commemoration line disappears on days without one. Wrap an optional part in `[? … ?]` to drop just that part, as in `[? · Comm. {comm_en}?]`. |
+| Callout template | The lines of the callout, with tokens such as `{title_en}`, `{rank}`, `{latin_line}`, `{class}`, `{comm_en}`, `{week_label}`, `{roman_date}` and `{pages}`. A line whose tokens are all empty is left out, so the commemoration line disappears on days without one. Wrap an optional part in `[? … ?]` to drop just that part, as in `[? · Comm. {comm_en}?]`. |
 | Insert callout / Insert properties | Turn either part off. |
 | Property prefix | Change `feast`, `feast_la` … to another prefix if `feast` clashes with your own properties. |
 | Add automatically | Turn off to add feasts only through the commands. |

@@ -1,3 +1,4 @@
+import { rankLabel } from "./describe";
 import { roman } from "./seasons";
 import { COLOUR_NAME, type DayInfo } from "./types";
 
@@ -20,10 +21,9 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 	full: {
 		both: [
 			"> [!festa|{colour}] {title_en}",
-			"> *{title_la_sub}*",
-			">",
-			"> {class} class · {week_label} · {roman_date}",
+			"> {rank} · {week_label}",
 			"> Commemoration: {comm_en}",
+			"> *{latin_line}*",
 		].join("\n"),
 		la: [
 			"> [!festa|{colour}] {title_la}",
@@ -32,19 +32,32 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 		].join("\n"),
 		en: [
 			"> [!festa|{colour}] {title_en}",
-			"> {class} class · {week_label} · {roman_date}",
+			"> {rank} · {week_label} · {roman_date}",
 			"> Commemoration: {comm_en}",
 		].join("\n"),
 	},
 	compact: {
-		both: "> [!festa|{colour}] {title_en} · {class} class[? · Comm. {comm_en}?]",
+		both: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?]",
 		la: "> [!festa|{colour}] {title_la} · Classis {class}[? · Comm. {comm_la}?]",
-		en: "> [!festa|{colour}] {title_en} · {class} class[? · Comm. {comm_en}?]",
+		en: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?]",
 	},
 };
 
-/** Templates shipped in 1.0.0, so saved copies can be upgraded to the new defaults. */
+/** Templates shipped in earlier versions, so saved copies can be upgraded to the new defaults. */
 export const LEGACY_TEMPLATES: string[] = [
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> *{title_la_sub}*",
+		">",
+		"> {class} class · {week_label} · {roman_date}",
+		"> Commemoration: {comm_en}",
+	].join("\n"),
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> {class} class · {week_label} · {roman_date}",
+		"> Commemoration: {comm_en}",
+	].join("\n"),
+	"> [!festa|{colour}] {title_en} · {class} class[? · Comm. {comm_en}?]",
 	[
 		"> [!festa|{colour}] {title_la}",
 		"> **{title_en}** · Class {class} · {colour}",
@@ -78,7 +91,7 @@ export function isDefaultTemplate(template: string): boolean {
 }
 
 export const TOKENS = [
-	"title", "title_alt", "title_la", "title_en", "title_la_sub", "class", "class_num", "colour", "colour_code",
+	"title", "title_alt", "title_la", "title_en", "title_la_sub", "latin_line", "rank", "class", "class_num", "colour", "colour_code",
 	"comm", "comm_alt", "comm_la", "comm_en", "comm_both", "displaced", "weekday_la",
 	"week_label", "week_label_la", "week", "season", "season_la", "roman_date", "roman_date_long",
 	"pages", "date",
@@ -101,6 +114,13 @@ export function tokens(info: DayInfo, lang: TitleLanguage): Record<string, strin
 		title_la: info.celebration.title.la,
 		title_en: info.celebration.title.en,
 		title_la_sub: info.celebration.title.la === info.celebration.title.en ? "" : info.celebration.title.la,
+		latin_line: [
+			info.celebration.title.la === info.celebration.title.en ? "" : info.celebration.title.la,
+			info.romanDate.short,
+		]
+			.filter(Boolean)
+			.join(" · "),
+		rank: rankLabel(info.celebration, info.weekday),
 		class: roman(info.celebration.rank),
 		class_num: String(info.celebration.rank),
 		colour: COLOUR_NAME[info.celebration.colour],

@@ -98,7 +98,7 @@ export default class FestaPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) as Partial<FestaSettings> | null) };
-		// Upgrade an unedited 1.0.0 template to the current default.
+		// Upgrade an unedited template from an earlier version to the current default.
 		if (LEGACY_TEMPLATES.includes(this.settings.template)) {
 			this.settings.template = defaultTemplate(this.settings.layout, this.settings.titleLanguage);
 			await this.saveSettings();

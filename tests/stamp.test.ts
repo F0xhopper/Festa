@@ -52,7 +52,7 @@ describe("stampFile", () => {
 		expect(once).toMatch(/^---\nfeast: Ember Saturday of September\n/);
 		expect(once).toContain("feast_week: 17");
 		expect(once).toContain("---\n> [!festa|violet] Ember Saturday of September\n");
-		expect(once).toContain("> Commemoration: Sts. Cyprian & Justina\n\n## Tasks\n");
+		expect(once).toContain("> *Sabbato Quattuor Temporum Septembris · a.d. VI Kal. Oct.*\n\n## Tasks\n");
 		expect(once.endsWith(TEMPLATE)).toBe(true);
 
 		expect(await stampFile(app, file, "2026-09-26", SETTINGS)).toBe("skipped");
@@ -116,10 +116,9 @@ describe("refreshFile", () => {
 				"mood: good",
 				"---",
 				"> [!festa|violet] Ember Saturday of September",
-				"> *Sabbato Quattuor Temporum Septembris*",
-				">",
-				"> II class · 17th week after Pentecost · a.d. VI Kal. Oct.",
+				"> Second-class Ember day · 17th week after Pentecost",
 				"> Commemoration: Sts. Cyprian & Justina",
+				"> *Sabbato Quattuor Temporum Septembris · a.d. VI Kal. Oct.*",
 				"",
 				"## Tasks",
 				"",
