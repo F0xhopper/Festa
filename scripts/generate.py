@@ -267,6 +267,24 @@ def main() -> None:
     write_json(args.out / "readings.json", readings_table, rows_per_line=True)
     print(f"readings: {len(readings_table)} distinct sets")
 
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from matins import lesson  # noqa: E402
+
+    ranks: dict[str, int] = {}
+    for y in years:
+        for row in json.loads((args.out / "years" / f"{y}.json").read_text()):
+            ranks.setdefault(row[1], row[2])
+            for c in row[4]:
+                ranks.setdefault(c[0], c[1])
+    matins = {}
+    for obs_id, rank in sorted(ranks.items()):
+        if obs_id.startswith("sancti:") or (obs_id.startswith("tempora:") and rank == 1):
+            found = lesson(obs_id, rank)
+            if found:
+                matins[obs_id] = found
+    write_json(args.out / "matins.json", matins)
+    print(f"matins lessons: {len(matins)}")
+
     for obs_id, repl in title_overrides.items():
         if obs_id not in titles:
             fail(f"title override for unknown id {obs_id}")

@@ -85,3 +85,28 @@ describe("week labels across 2026", () => {
 		expect(info.weekLabel.en).toBe(label);
 	});
 });
+
+describe("Matins readings", () => {
+	it("exist for every first- and second-class saint's feast in the bundled years", () => {
+		const { from, to } = dataRange();
+		const missing: string[] = [];
+		for (let y = from; y <= to; y++) {
+			for (let m = 1; m <= 12; m++) {
+				for (let d = 1; d <= daysInMonth(y, m); d++) {
+					const info = lookup(toISO({ y, m, d }))!;
+					if (info.celebration.id.startsWith("sancti:") && info.celebration.rank <= 2 && !info.matins) {
+						missing.push(`${info.date} ${info.celebration.title.en}`);
+					}
+				}
+			}
+		}
+		expect(missing).toEqual([]);
+	});
+
+	it("has English for today's commemoration", () => {
+		const m = lookup("2026-09-26")!.matins!;
+		expect(m.commemoration).toBe(true);
+		expect(m.source.title.en).toBe("Sts. Cyprian & Justina");
+		expect(m.en).toMatch(/^Cyprian was firstly a warlock/);
+	});
+});

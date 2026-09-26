@@ -6,7 +6,7 @@ const today = () => lookup("2026-09-26")!;
 
 describe("renderCallout, full layout", () => {
 	it("renders today's note as designed", () => {
-		expect(renderCallout(today(), { titleLanguage: "both", template: defaultTemplate("full", "both") })).toBe(
+		expect(renderCallout(today(), { titleLanguage: "both", template: defaultTemplate("full", "both"), matins: "off" })).toBe(
 			[
 				"> [!festa|violet] Ember Saturday of September",
 				"> Second-class Ember day · 17th week after Pentecost",
@@ -19,7 +19,7 @@ describe("renderCallout, full layout", () => {
 	});
 
 	it("drops the commemoration line when there is none", () => {
-		const out = renderCallout(lookup("2026-12-25")!, { titleLanguage: "both", template: defaultTemplate("full", "both") });
+		const out = renderCallout(lookup("2026-12-25")!, { titleLanguage: "both", template: defaultTemplate("full", "both"), matins: "off" });
 		expect(out).toBe(
 			[
 				"> [!festa|white] The Nativity of Our Lord",
@@ -31,7 +31,7 @@ describe("renderCallout, full layout", () => {
 	});
 
 	it("renders St Jerome with the corrected Latin", () => {
-		expect(renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both") })).toBe(
+		expect(renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both"), matins: "off" })).toBe(
 			[
 				"> [!festa|white] St. Jerome",
 				"> Third-class feast · 18th week after Pentecost",
@@ -42,7 +42,7 @@ describe("renderCallout, full layout", () => {
 	});
 
 	it("renders the Latin and English templates", () => {
-		expect(renderCallout(today(), { titleLanguage: "la", template: defaultTemplate("full", "la") })).toBe(
+		expect(renderCallout(today(), { titleLanguage: "la", template: defaultTemplate("full", "la"), matins: "off" })).toBe(
 			[
 				"> [!festa|violet] Sabbato Quattuor Temporum Septembris",
 				"> Classis II · Hebdomada XVII post Pentecosten · a.d. VI Kal. Oct.",
@@ -51,7 +51,7 @@ describe("renderCallout, full layout", () => {
 				"> Epistola: Hebr 9:2–12 · Evangelium: Luc 13:6–17",
 			].join("\n"),
 		);
-		expect(renderCallout(today(), { titleLanguage: "en", template: defaultTemplate("full", "en") }).split("\n")[0]).toBe(
+		expect(renderCallout(today(), { titleLanguage: "en", template: defaultTemplate("full", "en"), matins: "off" }).split("\n")[0]).toBe(
 			"> [!festa|violet] Ember Saturday of September",
 		);
 	});
@@ -92,6 +92,45 @@ describe("readings", () => {
 			template: defaultTemplate("full", "both"),
 		});
 		expect(out).not.toContain("Fast");
+	});
+});
+
+describe("Matins reading", () => {
+	const full = (iso: string, matins: "both" | "la" | "en" | "off", titleLanguage: "both" | "la" | "en" = "both") =>
+		renderCallout(lookup(iso)!, { titleLanguage, matins, template: defaultTemplate("full", titleLanguage) }).split("\n");
+
+	it("folds the celebration's lesson inside the feast callout, Latin then English", () => {
+		const lines = full("2026-09-30", "both");
+		const start = lines.indexOf("> > [!festa-matins]- Matins reading");
+		expect(start).toBeGreaterThan(0);
+		expect(lines[start - 1]).toBe(">");
+		expect(lines[start + 1]).toMatch(/^> > Hierónymus, Stridóne in Dalmátia natus/);
+		expect(lines).toContain("> > ---");
+		expect(lines[lines.length - 1]).toMatch(/^> > .*\S/);
+		expect(lines.slice(lines.indexOf("> > ---")).some((l) => l.startsWith("> > Jerome, born at Stridon"))).toBe(true);
+		expect(lines.every((l) => l.startsWith(">"))).toBe(true);
+	});
+
+	it("uses a commemorated saint's lesson on a day without its own, and says whose it is", () => {
+		const lines = full("2026-09-26", "en");
+		expect(lines).toContain("> > [!festa-matins]- Matins reading · Sts. Cyprian & Justina");
+		expect(lines.some((l) => l.startsWith("> > Cyprian was firstly a warlock"))).toBe(true);
+		expect(lines).not.toContain("> > ---");
+	});
+
+	it("titles the reading in Latin with the Latin template", () => {
+		expect(full("2026-09-26", "la", "la")).toContain("> > [!festa-matins]- Lectio ad Matutinum · Ss. Cypriani et Justinæ Martyrum");
+	});
+
+	it("sets the source of a sermon in italics", () => {
+		const lines = full("2026-09-29", "la");
+		expect(lines).toContain("> > *Sermo sancti Gregórii Papæ*");
+	});
+
+	it("disappears when off or when the day has no lesson", () => {
+		expect(full("2026-09-30", "off").some((l) => l.includes("festa-matins"))).toBe(false);
+		const plainFeria = lookup("2026-10-06")!;
+		if (!plainFeria.matins) expect(full("2026-10-06", "both").some((l) => l.includes("festa-matins"))).toBe(false);
 	});
 });
 

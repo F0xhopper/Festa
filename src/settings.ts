@@ -2,13 +2,14 @@ import { type App, PluginSettingTab, Setting } from "obsidian";
 import { dataRange } from "./calendar";
 import { dailyNoteLocation } from "./daily-notes";
 import type { FastingDiscipline } from "./fasting";
-import { defaultTemplate, isDefaultTemplate, type Layout, TOKENS, type TitleLanguage } from "./format";
+import { defaultTemplate, isDefaultTemplate, type Layout, type MatinsLanguage, TOKENS, type TitleLanguage } from "./format";
 import type FestaPlugin from "./main";
 
 export interface FestaSettings {
 	titleLanguage: TitleLanguage;
 	layout: Layout;
 	fasting: FastingDiscipline;
+	matins: MatinsLanguage;
 	template: string;
 	insertFrontmatter: boolean;
 	frontmatterPrefix: string;
@@ -24,6 +25,7 @@ export const DEFAULT_SETTINGS: FestaSettings = {
 	titleLanguage: "both",
 	layout: "full",
 	fasting: "traditional",
+	matins: "both",
 	template: defaultTemplate("full", "both"),
 	insertFrontmatter: true,
 	frontmatterPrefix: "feast",
@@ -91,6 +93,19 @@ export class FestaSettingTab extends PluginSettingTab {
 					.setValue(s.fasting)
 					.onChange(async (value) => {
 						s.fasting = value as FastingDiscipline;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Matins reading")
+			.setDesc("A reading about the saint or feast from the night office, folded under the feast until you open it.")
+			.addDropdown((d) =>
+				d
+					.addOptions({ both: "Latin and English", la: "Latin", en: "English", off: "Don't show" })
+					.setValue(s.matins)
+					.onChange(async (value) => {
+						s.matins = value as MatinsLanguage;
 						await this.plugin.saveSettings();
 					}),
 			);

@@ -34,6 +34,7 @@ function fakeApp(files: Record<string, string>) {
 const SETTINGS: StampSettings = {
 	titleLanguage: "both",
 	fasting: "traditional",
+	matins: "off",
 	template: defaultTemplate("full", "both"),
 	frontmatterPrefix: "feast",
 	insertFrontmatter: true,
@@ -135,6 +136,17 @@ describe("refreshFile", () => {
 		expect(files["n.md"].startsWith("> [!festa|violet] Ember Saturday of September\n")).toBe(true);
 	});
 
+	it("removes the nested Matins reading with the callout", async () => {
+		const files = { "n.md": "x\n" };
+		const app = fakeApp(files);
+		const s = { ...SETTINGS, insertFrontmatter: false, matins: "both" as const };
+		await stampFile(app, new TFile("n.md"), "2026-09-30", s);
+		expect(files["n.md"]).toContain("[!festa-matins]");
+		await refreshFile(app, new TFile("n.md"), "2026-09-30", { ...s, matins: "off" });
+		expect(files["n.md"]).not.toContain("festa-matins");
+		expect(files["n.md"].endsWith("\n\nx\n")).toBe(true);
+	});
+
 	it("is stable when run twice", async () => {
 		const files = { "n.md": OLD_NOTE };
 		const app = fakeApp(files);
@@ -142,6 +154,6 @@ describe("refreshFile", () => {
 		const once = files["n.md"];
 		await refreshFile(app, new TFile("n.md"), "2026-09-26", SETTINGS);
 		expect(files["n.md"]).toBe(once);
-		expect((once.match(/\[!festa/g) ?? []).length).toBe(1);
+		expect((once.match(/\[!festa\|/g) ?? []).length).toBe(1);
 	});
 });

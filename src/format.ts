@@ -6,9 +6,12 @@ import { COLOUR_NAME, type DayInfo, type ReadingRefs } from "./types";
 export type TitleLanguage = "both" | "la" | "en";
 export type Layout = "full" | "compact";
 
+export type MatinsLanguage = "both" | "la" | "en" | "off";
+
 export interface FormatOptions {
 	titleLanguage: TitleLanguage;
 	fasting?: FastingDiscipline;
+	matins?: MatinsLanguage;
 	layout: Layout;
 	template: string;
 	frontmatterPrefix: string;
@@ -28,6 +31,7 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 			"> **{fasting}**",
 			"> {readings}",
 			"> *{latin_line}*",
+			"{matins}",
 		].join("\n"),
 		la: [
 			"> [!festa|{colour}] {title_la}",
@@ -35,6 +39,7 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 			"> Commemoratio: {comm_la}",
 			"> **{fasting_la}**",
 			"> {readings_la}",
+			"{matins}",
 		].join("\n"),
 		en: [
 			"> [!festa|{colour}] {title_en}",
@@ -42,6 +47,7 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 			"> Commemoration: {comm_en}",
 			"> **{fasting}**",
 			"> {readings}",
+			"{matins}",
 		].join("\n"),
 	},
 	compact: {
@@ -53,6 +59,28 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 
 /** Templates shipped in earlier versions, so saved copies can be upgraded to the new defaults. */
 export const LEGACY_TEMPLATES: string[] = [
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> {rank} · {week_label}",
+		"> Commemoration: {comm_en}",
+		"> **{fasting}**",
+		"> {readings}",
+		"> *{latin_line}*",
+	].join("\n"),
+	[
+		"> [!festa|{colour}] {title_la}",
+		"> Classis {class} · {week_label_la} · {roman_date}",
+		"> Commemoratio: {comm_la}",
+		"> **{fasting_la}**",
+		"> {readings_la}",
+	].join("\n"),
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> {rank} · {week_label} · {roman_date}",
+		"> Commemoration: {comm_en}",
+		"> **{fasting}**",
+		"> {readings}",
+	].join("\n"),
 	[
 		"> [!festa|{colour}] {title_en}",
 		"> {rank} · {week_label}",
@@ -117,11 +145,36 @@ export function isDefaultTemplate(template: string): boolean {
 }
 
 export const TOKENS = [
-	"title", "title_alt", "title_la", "title_en", "title_la_sub", "latin_line", "rank", "fasting", "fasting_la", "readings", "readings_la", "epistle", "gospel", "lessons", "epistle_la", "gospel_la", "lessons_la", "class", "class_num", "colour", "colour_code",
+	"title", "title_alt", "title_la", "title_en", "title_la_sub", "latin_line", "rank", "fasting", "fasting_la", "readings", "readings_la", "epistle", "gospel", "lessons", "epistle_la", "gospel_la", "lessons_la", "matins", "class", "class_num", "colour", "colour_code",
 	"comm", "comm_alt", "comm_la", "comm_en", "comm_both", "displaced", "weekday_la",
 	"week_label", "week_label_la", "week", "season", "season_la", "roman_date", "roman_date_long",
 	"pages", "date",
 ] as const;
+
+/** One lesson as quoted paragraphs; a short opening line such as "Sermo sancti Leonis Papæ" is set in italics. */
+function lessonParagraphs(lesson: string): string[] {
+	const lines = lesson.split("\n").filter((l) => l.trim());
+	return lines.map((line, i) => (i === 0 && lines.length > 1 && line.length < 90 && !/[.!?:]$/.test(line) ? `*${line}*` : line));
+}
+
+/**
+ * The Matins reading as a collapsed callout nested in the feast callout. It carries its own
+ * "> " prefixes, so the template line is just "{matins}".
+ */
+export function matinsBlock(info: DayInfo, lang: MatinsLanguage, titleLanguage: TitleLanguage): string {
+	const m = info.matins;
+	if (!m || lang === "off") return "";
+	const langs: ("la" | "en")[] = lang === "both" ? ["la", "en"] : [lang];
+	const texts = langs.map((l) => (l === "en" ? m.en : m.la)).filter((t): t is string => !!t);
+	if (!texts.length) return "";
+	const latinTitle = titleLanguage === "la";
+	let title = latinTitle ? "Lectio ad Matutinum" : "Matins reading";
+	if (m.commemoration) title += ` · ${latinTitle ? m.source.title.la : m.source.title.en}`;
+	const body = texts
+		.map((text) => text.split(/\n\s*\n/).flatMap(lessonParagraphs).map((p) => `> > ${p}`).join("\n> >\n"))
+		.join("\n> >\n> > ---\n> >\n");
+	return `>\n> > [!festa-matins]- ${title}\n${body}`;
+}
 
 function readingsLine(r: ReadingRefs | undefined, la: boolean): string {
 	if (!r) return "";
@@ -132,7 +185,12 @@ function readingsLine(r: ReadingRefs | undefined, la: boolean): string {
 	return parts.join(" · ");
 }
 
-export function tokens(info: DayInfo, lang: TitleLanguage, discipline: FastingDiscipline = "traditional"): Record<string, string> {
+export function tokens(
+	info: DayInfo,
+	lang: TitleLanguage,
+	discipline: FastingDiscipline = "traditional",
+	matins: MatinsLanguage = "both",
+): Record<string, string> {
 	const fast = fasting(info, discipline);
 	const en = info.readings?.en;
 	const la = info.readings?.la;
@@ -169,6 +227,7 @@ export function tokens(info: DayInfo, lang: TitleLanguage, discipline: FastingDi
 		epistle_la: la?.e ?? "",
 		gospel_la: la?.g ?? "",
 		lessons_la: la?.l.join("; ") ?? "",
+		matins: matinsBlock(info, matins, lang),
 		class: roman(info.celebration.rank),
 		class_num: String(info.celebration.rank),
 		colour: COLOUR_NAME[info.celebration.colour],
@@ -213,9 +272,9 @@ function fill(text: string, values: Record<string, string>): { text: string; use
  */
 export function renderCallout(
 	info: DayInfo,
-	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting">,
+	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting" | "matins">,
 ): string {
-	const values = tokens(info, opts.titleLanguage, opts.fasting);
+	const values = tokens(info, opts.titleLanguage, opts.fasting, opts.matins);
 	const out: string[] = [];
 	for (const line of opts.template.split(/\r?\n/)) {
 		let used = 0;

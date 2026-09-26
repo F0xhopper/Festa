@@ -1,14 +1,26 @@
 import titlesJson from "./data/titles.json";
 import meta from "./data/meta.json";
 import readingsJson from "./data/readings.json";
+import matinsJson from "./data/matins.json";
 import { YEARS } from "./data/index";
 import { dayOfYear, parseISO, weekday } from "./dates";
 import { romanDate } from "./roman-date";
 import { weekInfo, weekdayLa } from "./seasons";
-import type { Bilingual, Colour, DayInfo, Observance, Rank, Readings, Titles } from "./types";
+import type { Bilingual, Colour, DayInfo, MatinsReading, MatinsText, Observance, Rank, Readings, Titles } from "./types";
 
 const TITLES = titlesJson as Titles;
 const READINGS = readingsJson as Readings[];
+const MATINS = matinsJson as Record<string, MatinsText>;
+
+function matinsFor(celebration: Observance, commemorations: Observance[]): MatinsReading | null {
+	const own = MATINS[celebration.id];
+	if (own) return { ...own, source: celebration, commemoration: false };
+	for (const c of commemorations) {
+		const text = MATINS[c.id];
+		if (text) return { ...text, source: c, commemoration: true };
+	}
+	return null;
+}
 
 export interface DataRange {
 	from: number;
@@ -49,14 +61,17 @@ export function lookup(dateISO: string): DayInfo | undefined {
 	const wd = weekday(date);
 	const [angelus, lasance, baronius] = pages;
 
+	const celebration = observance(celId, rank, colour);
+	const commemorations = comms.map(([id, r, c]) => observance(id, r, c));
+
 	return {
 		date: dateISO,
 		year: date.y,
 		month: date.m,
 		day: date.d,
 		weekday: wd,
-		celebration: observance(celId, rank, colour),
-		commemorations: comms.map(([id, r, c]) => observance(id, r, c)),
+		celebration,
+		commemorations,
 		displaced: displaced.map((id) => ({ id, title: title(id) })),
 		pages: {
 			...(angelus ? { angelus } : {}),
@@ -64,6 +79,7 @@ export function lookup(dateISO: string): DayInfo | undefined {
 			...(baronius ? { baronius } : {}),
 		},
 		readings: READINGS[readingsIndex] ?? null,
+		matins: matinsFor(celebration, commemorations),
 		ember: flags.includes("E"),
 		weekKey,
 		...weekInfo(weekKey, date, wd),

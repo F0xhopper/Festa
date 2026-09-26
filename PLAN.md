@@ -2,6 +2,8 @@
 
 ## Status (2026-09-26)
 
+Unreleased: a folded Matins reading (the 1960 historical lesson, or the second-nocturn lessons on I and II class feasts) in Latin and English, from the Divinum Officium Breviary via scripts/matins.py; 291 of 372 observances have one, including every I and II class saint.
+
 1.1.0 adds fasting and abstinence (1917 and 1983 rules) and the Epistle and Gospel references, generated from Missale Meum's Mass propers (Divinum Officium texts, nested submodule).
 
 Phases 0–3 are built, tested and pushed. Phase 4 remains: live with it in the vault, check 2026 against a printed Ordo, publish a release, submit to the community list.

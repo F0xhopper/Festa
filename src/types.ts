@@ -49,6 +49,18 @@ export interface ReadingRefs {
 
 export type Readings = Record<"en" | "la", ReadingRefs>;
 
+/** Lessons separated by blank lines; lines within a lesson by single newlines. */
+export interface MatinsText {
+	la: string;
+	en?: string;
+}
+
+export interface MatinsReading extends MatinsText {
+	source: Observance;
+	/** True when the reading belongs to a commemoration rather than the day's celebration. */
+	commemoration: boolean;
+}
+
 export type Rank = 1 | 2 | 3 | 4;
 
 export interface Observance {
@@ -83,6 +95,8 @@ export interface DayInfo extends WeekInfo {
 	displaced: { id: string; title: Bilingual }[];
 	pages: MissalPages;
 	readings: Readings | null;
+	/** The historical Matins lesson(s) of the celebration, or of the first commemorated saint that has one. */
+	matins: MatinsReading | null;
 	/** An Ember day, even when a feast outranks it. */
 	ember: boolean;
 	/** The key of the Sunday that governs the week ("Pent17", "Quad6" …). */
