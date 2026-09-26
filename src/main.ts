@@ -2,8 +2,8 @@ import { type Editor, type MarkdownFileInfo, type MarkdownView, Notice, Plugin, 
 import { dataRange, lookup } from "./calendar";
 import { todayISO } from "./dates";
 import { allDailyNotes, dailyNoteLocation, dateForFile } from "./daily-notes";
-import { defaultTemplate, frontmatterFields, LEGACY_TEMPLATES, renderCallout } from "./format";
-import { ConfirmModal } from "./modals";
+import { defaultTemplate, frontmatterFields, LEGACY_TEMPLATES, matinsNoteContent, renderCallout } from "./format";
+import { ConfirmModal, ReadingModal } from "./modals";
 import { hasMarker } from "./note-text";
 import { DEFAULT_SETTINGS, type FestaSettings, FestaSettingTab } from "./settings";
 import { ensureMatinsNote, refreshFile, stampFile, type StampResult } from "./stamp";
@@ -68,7 +68,7 @@ export default class FestaPlugin extends Plugin {
 					new Notice(`Festa: no bundled data for ${date.slice(0, 4)}.`);
 					return;
 				}
-				void ensureMatinsNote(this.app, info, this.settings, false);
+				if (this.settings.matinsMode === "note") void ensureMatinsNote(this.app, info, this.settings, false);
 				editor.replaceSelection(renderCallout(info, this.settings) + "\n");
 			},
 		});
@@ -83,6 +83,20 @@ export default class FestaPlugin extends Plugin {
 			id: "refresh-feasts-in-all-daily-notes",
 			name: "Refresh feasts in all daily notes",
 			callback: () => this.refreshAll(),
+		});
+
+		// obsidian://festa?matins=YYYY-MM-DD opens that day's Matins reading.
+		this.registerObsidianProtocolHandler("festa", (params) => {
+			if (params.matins) this.openMatins(params.matins);
+		});
+
+		this.addCommand({
+			id: "open-matins-reading",
+			name: "Open the reading of the day",
+			callback: () => {
+				const file = this.app.workspace.getActiveFile();
+				this.openMatins((file && dateForFile(file, this.location())) || todayISO());
+			},
 		});
 
 		this.app.workspace.onLayoutReady(() => {
@@ -108,6 +122,23 @@ export default class FestaPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+	}
+
+	openMatins(date: string): void {
+		const info = lookup(date);
+		const lang = this.settings.matins === "off" ? "both" : this.settings.matins;
+		const markdown = info ? matinsNoteContent(info, lang) : "";
+		if (!info || !markdown) {
+			new Notice(`Festa: no Matins reading for ${date}.`);
+			return;
+		}
+		new ReadingModal(this.app, markdown, {
+			text: "Save as note",
+			run: () =>
+				void ensureMatinsNote(this.app, info, { matins: lang, matinsFolder: this.settings.matinsFolder }, false).then(
+					(file) => file && void this.app.workspace.getLeaf(true).openFile(file),
+				),
+		}).open();
 	}
 
 	private location() {

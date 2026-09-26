@@ -105,12 +105,23 @@ describe("readings", () => {
 });
 
 describe("Matins reading", () => {
-	const lastLine = (iso: string, titleLanguage: "both" | "la" | "en" = "both", matins: "both" | "la" | "en" | "off" = "both") => {
-		const lines = renderCallout(lookup(iso)!, { titleLanguage, matins, template: defaultTemplate("full", titleLanguage) }).split("\n");
+	const lastLine = (
+		iso: string,
+		titleLanguage: "both" | "la" | "en" = "both",
+		matins: "both" | "la" | "en" | "off" = "both",
+		matinsMode: "popup" | "note" = "note",
+	) => {
+		const lines = renderCallout(lookup(iso)!, { titleLanguage, matins, matinsMode, template: defaultTemplate("full", titleLanguage) }).split("\n");
 		return lines[lines.length - 1];
 	};
 
-	it("ends the callout with a link to the reading's note", () => {
+	it("links in-app by default, opening the reading without a file", () => {
+		const out = renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both") }).split("\n");
+		expect(out[out.length - 1]).toBe("> [Matins reading](obsidian://festa?matins=2026-09-30)");
+		expect(lastLine("2026-09-26", "both", "both", "popup")).toBe("> [Matins reading · Sts. Cyprian & Justina](obsidian://festa?matins=2026-09-26)");
+	});
+
+	it("ends the callout with a link to the reading's note in note mode", () => {
 		expect(lastLine("2026-09-30")).toBe("> [[Festa/Matins/St. Jerome|Matins reading]]");
 		expect(matinsNotePath(lookup("2026-09-30")!, "Liturgy/Readings/")).toBe("Liturgy/Readings/St. Jerome.md");
 	});

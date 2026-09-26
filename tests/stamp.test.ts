@@ -42,6 +42,7 @@ const SETTINGS: StampSettings = {
 	fasting: "traditional",
 	matins: "off",
 	matinsFolder: "Festa/Matins",
+	matinsMode: "popup",
 	template: defaultTemplate("full", "both"),
 	frontmatterPrefix: "feast",
 	insertFrontmatter: true,
@@ -143,12 +144,23 @@ describe("refreshFile", () => {
 		expect(files["n.md"].startsWith("> [!festa|violet] Ember Saturday of September\n")).toBe(true);
 	});
 
+	it("creates no files in pop-up mode", async () => {
+		const files: Record<string, string> = { "Daily/2026-09-30.md": "x\n" };
+		const folders = new Set<string>();
+		const s = { ...SETTINGS, insertFrontmatter: false, matins: "both" as const };
+		await stampFile(fakeApp(files, folders), new TFile("Daily/2026-09-30.md"), "2026-09-30", s);
+		await refreshFile(fakeApp(files, folders), new TFile("Daily/2026-09-30.md"), "2026-09-30", s);
+		expect(Object.keys(files)).toEqual(["Daily/2026-09-30.md"]);
+		expect(folders.size).toBe(0);
+		expect(files["Daily/2026-09-30.md"]).toContain("> [Matins reading](obsidian://festa?matins=2026-09-30)");
+	});
+
 	it("creates the Matins note once, and rewrites it only on refresh", async () => {
 		const files: Record<string, string> = { "Daily/2026-09-30.md": "x\n" };
 		const folders = new Set<string>();
 		const app = fakeApp(files, folders);
 		const file = new TFile("Daily/2026-09-30.md");
-		const s = { ...SETTINGS, insertFrontmatter: false, matins: "both" as const };
+		const s = { ...SETTINGS, insertFrontmatter: false, matins: "both" as const, matinsMode: "note" as const };
 		await stampFile(app, file, "2026-09-30", s);
 		expect(files["Daily/2026-09-30.md"]).toContain("> [[Festa/Matins/St. Jerome|Matins reading]]");
 		expect([...folders]).toEqual(["Festa", "Festa/Matins"]);

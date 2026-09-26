@@ -21,3 +21,7 @@
 .festa-template-input { width: 100%; min-width: 280px; font-family: var(--font-monospace); }
 .festa-invalid { border-color: var(--text-error); }
 
+
+/* The Matins reading window. */
+.festa-reading-modal { width: min(46rem, 92vw); }
+.festa-reading { user-select: text; }

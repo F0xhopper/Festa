@@ -5,6 +5,7 @@ import {
 	FIELD_SUFFIXES,
 	frontmatterFields,
 	type MatinsLanguage,
+	type MatinsMode,
 	matinsNoteContent,
 	matinsNotePath,
 	renderCallout,
@@ -18,6 +19,7 @@ export interface StampSettings {
 	fasting: FastingDiscipline;
 	matins: MatinsLanguage;
 	matinsFolder: string;
+	matinsMode: MatinsMode;
 	template: string;
 	frontmatterPrefix: string;
 	insertFrontmatter: boolean;
@@ -45,7 +47,7 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
 		});
 	}
 	if (s.insertCallout) {
-		await ensureMatinsNote(app, info, s, false);
+		if (s.matinsMode === "note") await ensureMatinsNote(app, info, s, false);
 		const callout = renderCallout(info, s);
 		await app.vault.process(file, (data) => {
 			const [, body] = splitFrontmatter(data);
@@ -62,7 +64,7 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
 export async function refreshFile(app: App, file: TFile, date: string, s: StampSettings): Promise<StampResult> {
 	const info = lookup(date);
 	if (!info) return "out-of-range";
-	if (s.insertCallout) await ensureMatinsNote(app, info, s, true);
+	if (s.insertCallout && s.matinsMode === "note") await ensureMatinsNote(app, info, s, true);
 	const current = await app.vault.read(file);
 	const [head] = splitFrontmatter(current);
 	const keys = FIELD_SUFFIXES.map((suffix) => s.frontmatterPrefix + suffix);
@@ -79,19 +81,24 @@ export async function refreshFile(app: App, file: TFile, date: string, s: StampS
  * Write the Matins note the daily note links to. Festa owns these notes: an existing one is
  * rewritten only when refreshing, so the text follows the current language setting.
  */
-export async function ensureMatinsNote(app: App, info: DayInfo, s: StampSettings, overwrite: boolean): Promise<void> {
+export async function ensureMatinsNote(
+	app: App,
+	info: DayInfo,
+	s: Pick<StampSettings, "matins" | "matinsFolder">,
+	overwrite: boolean,
+): Promise<TFile | null> {
 	const path = matinsNotePath(info, s.matinsFolder);
 	const content = matinsNoteContent(info, s.matins);
-	if (!path || !content) return;
+	if (!path || !content) return null;
 	const existing = app.vault.getAbstractFileByPath(path);
 	if (existing instanceof TFile) {
 		if (overwrite) await app.vault.process(existing, (old) => (old === content ? old : content));
-		return;
+		return existing;
 	}
 	const parts = path.split("/").slice(0, -1);
 	for (let i = 1; i <= parts.length; i++) {
 		const dir = parts.slice(0, i).join("/");
 		if (!app.vault.getAbstractFileByPath(dir)) await app.vault.createFolder(dir);
 	}
-	await app.vault.create(path, content);
+	return app.vault.create(path, content);
 }
