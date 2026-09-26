@@ -8,7 +8,10 @@ import {
 	type MatinsMode,
 	matinsNoteContent,
 	matinsNotePath,
+	effectiveTemplate,
+	type Layout,
 	renderCallout,
+	type ShowOptions,
 	type TitleLanguage,
 } from "./format";
 import type { DayInfo } from "./types";
@@ -16,6 +19,8 @@ import { CALLOUT_MARKER, dropEmptyFrontmatter, hasMarker, insertAfterFrontmatter
 
 export interface StampSettings {
 	titleLanguage: TitleLanguage;
+	layout?: Layout;
+	show?: ShowOptions;
 	fasting: FastingDiscipline;
 	matins: MatinsLanguage;
 	matinsFolder: string;
@@ -48,7 +53,7 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
 	}
 	if (s.insertCallout) {
 		if (s.matinsMode === "note") await ensureMatinsNote(app, info, s, false);
-		const callout = renderCallout(info, s);
+		const callout = renderCallout(info, { ...s, template: effectiveTemplate({ ...s, layout: s.layout ?? "full" }) });
 		await app.vault.process(file, (data) => {
 			const [, body] = splitFrontmatter(data);
 			return body.includes(CALLOUT_MARKER) ? data : insertAfterFrontmatter(data, callout);

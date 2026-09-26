@@ -4,8 +4,9 @@ import { dailyNoteLocation } from "./daily-notes";
 import type { FastingDiscipline } from "./fasting";
 import {
 	DEFAULT_MATINS_FOLDER,
+	DEFAULT_SHOW,
 	defaultTemplate,
-	isDefaultTemplate,
+	type ShowOptions,
 	type Layout,
 	type MatinsLanguage,
 	type MatinsMode,
@@ -17,6 +18,7 @@ import type FestaPlugin from "./main";
 export interface FestaSettings {
 	titleLanguage: TitleLanguage;
 	layout: Layout;
+	show: ShowOptions;
 	fasting: FastingDiscipline;
 	matins: MatinsLanguage;
 	matinsFolder: string;
@@ -35,11 +37,13 @@ export interface FestaSettings {
 export const DEFAULT_SETTINGS: FestaSettings = {
 	titleLanguage: "both",
 	layout: "full",
+	show: { ...DEFAULT_SHOW },
 	fasting: "traditional",
-	matins: "both",
+	matins: "off",
 	matinsFolder: DEFAULT_MATINS_FOLDER,
 	matinsMode: "popup",
-	template: defaultTemplate("full", "both"),
+	/** Empty means: build the template from the options above. */
+	template: "",
 	insertFrontmatter: true,
 	frontmatterPrefix: "feast",
 	insertCallout: true,
@@ -76,7 +80,6 @@ export class FestaSettingTab extends PluginSettingTab {
 					.setValue(s.titleLanguage)
 					.onChange(async (value) => {
 						s.titleLanguage = value as TitleLanguage;
-						if (isDefaultTemplate(s.template)) s.template = defaultTemplate(s.layout, s.titleLanguage);
 						await this.plugin.saveSettings();
 						this.display();
 					}),
@@ -91,11 +94,28 @@ export class FestaSettingTab extends PluginSettingTab {
 					.setValue(s.layout)
 					.onChange(async (value) => {
 						s.layout = value as Layout;
-						if (isDefaultTemplate(s.template)) s.template = defaultTemplate(s.layout, s.titleLanguage);
 						await this.plugin.saveSettings();
 						this.display();
 					}),
 			);
+
+		const toggles: [keyof ShowOptions, string, string][] = [
+			["rank", "Show rank and week", "For example: third-class feast · 18th week after Pentecost."],
+			["commemorations", "Show commemorations", "Saints commemorated on the day."],
+			["readings", "Show the readings", "The Epistle and Gospel of the day's Mass."],
+			["latin", "Show the Latin title and Roman date", "For example: S. Hieronymi … · prid. Kal. Oct."],
+		];
+		for (const [key, name, desc] of toggles) {
+			new Setting(containerEl)
+				.setName(name)
+				.setDesc(desc)
+				.addToggle((t) =>
+					t.setValue(s.show[key]).onChange(async (value) => {
+						s.show = { ...s.show, [key]: value };
+						await this.plugin.saveSettings();
+					}),
+				);
+		}
 
 		new Setting(containerEl)
 			.setName("Fasting and abstinence")
@@ -150,11 +170,12 @@ export class FestaSettingTab extends PluginSettingTab {
 		}
 
 		const templateSetting = new Setting(containerEl)
-			.setName("Callout template")
+			.setName("Custom template")
 			.setDesc(
-				`Tokens: ${TOKENS.map((t) => `{${t}}`).join(" ")}. A line whose tokens are all empty is left out, and so is an optional part written as [? … ?]. Changing language or layout replaces the template unless you have edited it.`,
+				`Leave empty to use the options above. Tokens: ${TOKENS.map((t) => `{${t}}`).join(" ")}. A line whose tokens are all empty is left out, and so is an optional part written as [? … ?].`,
 			)
 			.addTextArea((t) => {
+				t.setPlaceholder(defaultTemplate(s.layout, s.titleLanguage, s.show));
 				t.setValue(s.template).onChange(async (value) => {
 					s.template = value;
 					await this.plugin.saveSettings();
@@ -164,10 +185,10 @@ export class FestaSettingTab extends PluginSettingTab {
 			})
 			.addExtraButton((b) =>
 				b
-					.setIcon("rotate-ccw")
-					.setTooltip("Reset to default")
+					.setIcon("copy")
+					.setTooltip("Start from the current default")
 					.onClick(async () => {
-						s.template = defaultTemplate(s.layout, s.titleLanguage);
+						s.template = defaultTemplate(s.layout, s.titleLanguage, s.show);
 						await this.plugin.saveSettings();
 						this.display();
 					}),

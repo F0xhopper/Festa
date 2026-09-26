@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { lookup } from "../src/calendar";
 import { matinsNoteName } from "../src/calendar";
 import {
+	DEFAULT_SHOW,
 	defaultTemplate,
+	effectiveTemplate,
 	frontmatterFields,
 	isDefaultTemplate,
 	LEGACY_TEMPLATES,
@@ -116,7 +118,7 @@ describe("Matins reading", () => {
 	};
 
 	it("links in-app by default, opening the reading without a file", () => {
-		const out = renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both") }).split("\n");
+		const out = renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", matins: "both", template: defaultTemplate("full", "both") }).split("\n");
 		expect(out[out.length - 1]).toBe("> [Matins reading](obsidian://festa?matins=2026-09-30)");
 		expect(lastLine("2026-09-26", "both", "both", "popup")).toBe("> [Matins reading · Sts. Cyprian & Justina](obsidian://festa?matins=2026-09-26)");
 	});
@@ -154,9 +156,49 @@ describe("Matins reading", () => {
 	});
 });
 
+describe("show options", () => {
+	const render = (show: Partial<import("../src/format").ShowOptions>, lang: "both" | "la" | "en" = "both", layout: "full" | "compact" = "full") =>
+		renderCallout(lookup("2026-09-26")!, {
+			titleLanguage: lang,
+			template: defaultTemplate(layout, lang, { rank: true, commemorations: true, readings: true, latin: true, ...show }),
+		});
+
+	it("leaves the reading off by default", () => {
+		expect(renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both") })).not.toContain("Matins");
+	});
+
+	it("drops each line when its option is off", () => {
+		expect(render({ rank: false })).not.toContain("Second-class Ember day");
+		expect(render({ commemorations: false })).not.toContain("Commemoration");
+		expect(render({ readings: false })).not.toContain("Epistle");
+		expect(render({ latin: false })).not.toContain("Sabbato");
+		expect(render({ rank: false, commemorations: false, readings: false, latin: false })).toBe(
+			"> [!festa|violet] Ember Saturday of September\n> **Fast and abstinence**",
+		);
+	});
+
+	it("keeps the Roman date on its own line in English when rank is off", () => {
+		expect(render({ rank: false }, "en").split("\n")[1]).toBe("> a.d. VI Kal. Oct.");
+		expect(render({ latin: false }, "en").split("\n")[1]).toBe("> Second-class Ember day · 17th week after Pentecost");
+	});
+
+	it("applies to the compact layout", () => {
+		expect(render({ rank: false, commemorations: false }, "both", "compact")).toBe(
+			"> [!festa|violet] Ember Saturday of September · **Fast and abstinence**",
+		);
+	});
+
+	it("uses a custom template only when one is written", () => {
+		const base = { layout: "full" as const, titleLanguage: "both" as const, show: { ...DEFAULT_SHOW, readings: false } };
+		expect(effectiveTemplate({ ...base, template: "" })).toBe(defaultTemplate("full", "both", base.show));
+		expect(effectiveTemplate({ ...base, template: "  " })).toBe(defaultTemplate("full", "both", base.show));
+		expect(effectiveTemplate({ ...base, template: "> [!festa] {title}" })).toBe("> [!festa] {title}");
+	});
+});
+
 describe("templates", () => {
 	it("recognises shipped and legacy defaults", () => {
-		expect(isDefaultTemplate(defaultTemplate("compact", "la"))).toBe(true);
+		expect(isDefaultTemplate("")).toBe(true);
 		expect(isDefaultTemplate(LEGACY_TEMPLATES[0]!)).toBe(true);
 		expect(isDefaultTemplate("> [!festa] {title}")).toBe(false);
 	});

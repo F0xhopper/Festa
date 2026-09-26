@@ -2,6 +2,8 @@
 
 ## Status (2026-09-26)
 
+1.2.0: show options (rank and week, commemorations, readings, Latin line) build the template; the template box is an optional override. The Matins reading ships but is off by default (pop-up via obsidian://festa, or notes).
+
 Unreleased: a Matins reading link. Default: obsidian://festa?matins=DATE opens the bundled reading in a window with 'Save as note' (no files written). Option: a linked Matins note (Festa/Matins/<saint>.md, created on demand; a web link was not possible because Divinum Officium's Cloudflare blocks dated URLs) holding the Matins reading (the 1960 historical lesson, or the second-nocturn lessons on I and II class feasts) in Latin and English, from the Divinum Officium Breviary via scripts/matins.py; 291 of 372 observances have one, including every I and II class saint.
 
 1.1.0 adds fasting and abstinence (1917 and 1983 rules) and the Epistle and Gospel references, generated from Missale Meum's Mass propers (Divinum Officium texts, nested submodule).

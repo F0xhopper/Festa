@@ -22,48 +22,84 @@ export interface FormatOptions {
 	frontmatterPrefix: string;
 }
 
+/** Which optional lines the generated template includes. The title line is always shown. */
+export interface ShowOptions {
+	/** Rank and week, e.g. "Third-class feast · 18th week after Pentecost". */
+	rank: boolean;
+	commemorations: boolean;
+	readings: boolean;
+	/** The Latin title and the Roman-style date. */
+	latin: boolean;
+}
+
+export const DEFAULT_SHOW: ShowOptions = { rank: true, commemorations: true, readings: true, latin: true };
+
 /**
  * Template syntax: {token} is replaced by its value. [? … ?] is an optional segment,
  * dropped when every token inside it is empty. A line that uses tokens and whose tokens
- * all came out empty is dropped.
+ * all came out empty is dropped. Fasting and the Matins link have their own settings and
+ * vanish when those are off, so they are always in the generated template.
  */
-export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = {
-	full: {
-		both: [
-			"> [!festa|{colour}] {title_en}",
-			"> {rank} · {week_label}",
-			"> Commemoration: {comm_en}",
-			"> **{fasting}**",
-			"> {readings}",
-			"> *{latin_line}*",
-			"> {matins}",
-		].join("\n"),
-		la: [
-			"> [!festa|{colour}] {title_la}",
-			"> Classis {class} · {week_label_la} · {roman_date}",
-			"> Commemoratio: {comm_la}",
-			"> **{fasting_la}**",
-			"> {readings_la}",
-			"> {matins}",
-		].join("\n"),
-		en: [
-			"> [!festa|{colour}] {title_en}",
-			"> {rank} · {week_label} · {roman_date}",
-			"> Commemoration: {comm_en}",
-			"> **{fasting}**",
-			"> {readings}",
-			"> {matins}",
-		].join("\n"),
-	},
-	compact: {
-		both: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?][? · **{fasting}**?]",
-		la: "> [!festa|{colour}] {title_la} · Classis {class}[? · Comm. {comm_la}?][? · **{fasting_la}**?]",
-		en: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?][? · **{fasting}**?]",
-	},
-};
+export function defaultTemplate(layout: Layout, lang: TitleLanguage, show: ShowOptions = DEFAULT_SHOW): string {
+	const la = lang === "la";
+	const fasting = la ? "{fasting_la}" : "{fasting}";
+	const comm = la ? "{comm_la}" : "{comm_en}";
+	if (layout === "compact") {
+		const title = la ? "{title_la}" : "{title_en}";
+		const rank = show.rank ? (la ? " · Classis {class}" : " · {rank}") : "";
+		const comms = show.commemorations ? `[? · Comm. ${comm}?]` : "";
+		return `> [!festa|{colour}] ${title}${rank}${comms}[? · **${fasting}**?]`;
+	}
+	const lines = [la ? "> [!festa|{colour}] {title_la}" : "> [!festa|{colour}] {title_en}"];
+	if (show.rank) {
+		const date = show.latin && lang !== "both" ? " · {roman_date}" : "";
+		lines.push(la ? `> Classis {class} · {week_label_la}${date}` : `> {rank} · {week_label}${date}`);
+	} else if (show.latin && lang !== "both") {
+		lines.push("> {roman_date}");
+	}
+	if (show.commemorations) lines.push(la ? "> Commemoratio: {comm_la}" : "> Commemoration: {comm_en}");
+	lines.push(`> **${fasting}**`);
+	if (show.readings) lines.push(la ? "> {readings_la}" : "> {readings}");
+	if (show.latin && lang === "both") lines.push("> *{latin_line}*");
+	lines.push("> {matins}");
+	return lines.join("\n");
+}
+
+/** The template in use: the custom one if the user wrote one, otherwise the generated default. */
+export function effectiveTemplate(s: { template: string; layout: Layout; titleLanguage: TitleLanguage; show?: ShowOptions }): string {
+	return s.template.trim() ? s.template : defaultTemplate(s.layout, s.titleLanguage, s.show ?? DEFAULT_SHOW);
+}
 
 /** Templates shipped in earlier versions, so saved copies can be upgraded to the new defaults. */
 export const LEGACY_TEMPLATES: string[] = [
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> {rank} · {week_label}",
+		"> Commemoration: {comm_en}",
+		"> **{fasting}**",
+		"> {readings}",
+		"> *{latin_line}*",
+		"> {matins}",
+	].join("\n"),
+	[
+		"> [!festa|{colour}] {title_la}",
+		"> Classis {class} · {week_label_la} · {roman_date}",
+		"> Commemoratio: {comm_la}",
+		"> **{fasting_la}**",
+		"> {readings_la}",
+		"> {matins}",
+	].join("\n"),
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> {rank} · {week_label} · {roman_date}",
+		"> Commemoration: {comm_en}",
+		"> **{fasting}**",
+		"> {readings}",
+		"> {matins}",
+	].join("\n"),
+	"> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?][? · **{fasting}**?]",
+	"> [!festa|{colour}] {title_la} · Classis {class}[? · Comm. {comm_la}?][? · **{fasting_la}**?]",
+	"> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?][? · **{fasting}**?]",
 	[
 		"> [!festa|{colour}] {title_en}",
 		"> {rank} · {week_label}",
@@ -138,15 +174,8 @@ export const LEGACY_TEMPLATES: string[] = [
 	].join("\n"),
 ];
 
-export function defaultTemplate(layout: Layout, lang: TitleLanguage): string {
-	return DEFAULT_TEMPLATES[layout][lang];
-}
-
 export function isDefaultTemplate(template: string): boolean {
-	return (
-		LEGACY_TEMPLATES.includes(template) ||
-		Object.values(DEFAULT_TEMPLATES).some((byLang) => Object.values(byLang).includes(template))
-	);
+	return template.trim() === "" || LEGACY_TEMPLATES.includes(template);
 }
 
 export const TOKENS = [
@@ -218,7 +247,7 @@ export function tokens(
 	info: DayInfo,
 	lang: TitleLanguage,
 	discipline: FastingDiscipline = "traditional",
-	matins: MatinsLanguage = "both",
+	matins: MatinsLanguage = "off",
 	matinsFolder: string = DEFAULT_MATINS_FOLDER,
 	matinsMode: MatinsMode = "popup",
 ): Record<string, string> {

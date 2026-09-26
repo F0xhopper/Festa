@@ -2,7 +2,7 @@ import { type Editor, type MarkdownFileInfo, type MarkdownView, Notice, Plugin, 
 import { dataRange, lookup } from "./calendar";
 import { todayISO } from "./dates";
 import { allDailyNotes, dailyNoteLocation, dateForFile } from "./daily-notes";
-import { defaultTemplate, frontmatterFields, LEGACY_TEMPLATES, matinsNoteContent, renderCallout } from "./format";
+import { DEFAULT_SHOW, effectiveTemplate, frontmatterFields, LEGACY_TEMPLATES, matinsNoteContent, renderCallout } from "./format";
 import { ConfirmModal, ReadingModal } from "./modals";
 import { hasMarker } from "./note-text";
 import { DEFAULT_SETTINGS, type FestaSettings, FestaSettingTab } from "./settings";
@@ -21,7 +21,7 @@ export default class FestaPlugin extends Plugin {
 		lookup,
 		renderCallout: (date: string) => {
 			const info = lookup(date);
-			return info ? renderCallout(info, this.settings) : "";
+			return info ? renderCallout(info, { ...this.settings, template: effectiveTemplate(this.settings) }) : "";
 		},
 		frontmatterFields: (date: string) => {
 			const info = lookup(date);
@@ -69,7 +69,7 @@ export default class FestaPlugin extends Plugin {
 					return;
 				}
 				if (this.settings.matinsMode === "note") void ensureMatinsNote(this.app, info, this.settings, false);
-				editor.replaceSelection(renderCallout(info, this.settings) + "\n");
+				editor.replaceSelection(renderCallout(info, { ...this.settings, template: effectiveTemplate(this.settings) }) + "\n");
 			},
 		});
 
@@ -114,8 +114,9 @@ export default class FestaPlugin extends Plugin {
 	async loadSettings(): Promise<void> {
 		this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) as Partial<FestaSettings> | null) };
 		// Upgrade an unedited template from an earlier version to the current default.
+		this.settings.show = { ...DEFAULT_SHOW, ...this.settings.show };
 		if (LEGACY_TEMPLATES.includes(this.settings.template)) {
-			this.settings.template = defaultTemplate(this.settings.layout, this.settings.titleLanguage);
+			this.settings.template = "";
 			await this.saveSettings();
 		}
 	}

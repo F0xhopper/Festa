@@ -1,6 +1,6 @@
 # Festa
 
-Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, fast and abstinence, the Epistle and Gospel of the day's Mass, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day. Its last line links to the Matins reading from the Breviary about the saint or feast, in Latin and English.
+Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, fast and abstinence, the Epistle and Gospel of the day's Mass, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day. You choose which lines appear. Optionally, a last line links to the Matins reading from the Breviary about the saint or feast.
 
 Everything is bundled with the plugin. It works offline, on desktop and mobile, and never contacts a server.
 
@@ -18,7 +18,6 @@ Everything is bundled with the plugin. It works offline, on desktop and mobile, 
 > Third-class feast · 18th week after Pentecost
 > Epistle: 2 Tim 4:1–8 · Gospel: Matt 5:13–19
 > *S. Hieronymi Presbyteri Confessoris et Ecclesiæ Doctoris · prid. Kal. Oct.*
-> [Matins reading](obsidian://festa?matins=2026-09-30)
 ```
 
 The callout is violet, green, red, white, black or rose, following the colour of the day. A compact one-line layout is also available:
@@ -70,9 +69,9 @@ A bold line marks the days of fasting and abstinence. Choose the rules in the se
 
 The readings line gives the references for the Epistle and Gospel of the day's Mass, in English, or in Latin with the Latin template. On Good Friday it lists the two lessons and the Passion. The Old Testament lessons of Ember Wednesdays and Saturdays are in the `{lessons}` token, if you want them in your template.
 
-### Matins reading
+### Matins reading (optional)
 
-The last line links to the day's reading from Matins, the night office of the Breviary: the Church's own short life of the saint, or a Father's sermon on the feast. Click it and the reading opens in a window, in Latin and English, straight from the text bundled with Festa. Nothing is written to your vault. The window has a **Save as note** button if you want to keep a reading. The command **Open the reading of the day** does the same for the daily note you have open.
+Off by default. Turn on **Matins reading** in the settings and the last line links to the day's reading from Matins, the night office of the Breviary: the Church's own short life of the saint, or a Father's sermon on the feast. Click it and the reading opens in a window, in Latin and English, straight from the text bundled with Festa. Nothing is written to your vault. The window has a **Save as note** button if you want to keep a reading. The command **Open the reading of the day** does the same for the daily note you have open.
 
 If you would rather have the readings as notes, set **Open the reading** to **As a note**. Festa then creates one note per saint or feast in `Festa/Matins` (you can change the folder) the first time a daily note needs it, and links to it instead.
 
@@ -97,11 +96,15 @@ SORT file.name ASC
 |---|---|
 | Title language | English with Latin, Latin only, or English only. |
 | Layout | Full puts each detail on its own line. Compact fits the feast on one line. |
+| Show rank and week | "Third-class feast · 18th week after Pentecost". |
+| Show commemorations | The saints commemorated on the day. |
+| Show the readings | The Epistle and Gospel references. |
+| Show the Latin title and Roman date | The italic Latin line. |
 | Fasting and abstinence | 1962 discipline, current law, or don't show. |
-| Matins reading | Latin and English, Latin, English, or don't show. |
+| Matins reading | Off by default. Latin and English, Latin, or English. |
 | Open the reading | In a window (default, no files) or as a note. |
 | Matins notes folder | In note mode, where the reading notes are kept. Defaults to `Festa/Matins`. |
-| Callout template | The lines of the callout, built from tokens (see below). Changing language or layout replaces the template unless you have edited it. |
+| Custom template | Empty by default, which means the lines follow the options above. Write your own template here for full control. |
 | Insert callout | Add the callout at the top of the note. |
 | Insert properties | Add the properties listed above. |
 | Property prefix | Change `feast`, `feast_la` … to another prefix if `feast` clashes with your own properties. |
