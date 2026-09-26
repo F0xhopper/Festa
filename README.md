@@ -1,6 +1,6 @@
 # Festa
 
-Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, fast and abstinence, the Epistle and Gospel of the day's Mass, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day. Folded inside it is the Matins reading from the Breviary about the saint or feast, in Latin and English.
+Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, fast and abstinence, the Epistle and Gospel of the day's Mass, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day. Its last line links to a note with the Matins reading from the Breviary about the saint or feast, in Latin and English.
 
 Everything is bundled with the plugin. It works offline, on desktop and mobile, and never contacts a server.
 
@@ -18,13 +18,7 @@ Everything is bundled with the plugin. It works offline, on desktop and mobile, 
 > Third-class feast · 18th week after Pentecost
 > Epistle: 2 Tim 4:1–8 · Gospel: Matt 5:13–19
 > *S. Hieronymi Presbyteri Confessoris et Ecclesiæ Doctoris · prid. Kal. Oct.*
->
-> > [!festa-matins]- Matins reading
-> > Hierónymus, Stridóne in Dalmátia natus, Romæ adoléscens est baptizátus, …
-> >
-> > ---
-> >
-> > Jerome, born at Stridon in Dalmatia, was baptized at Rome as a young man, …
+> [[Festa/Matins/St. Jerome|Matins reading]]
 ```
 
 The callout is violet, green, red, white, black or rose, following the colour of the day. A compact one-line layout is also available:
@@ -78,9 +72,11 @@ The readings line gives the references for the Epistle and Gospel of the day's M
 
 ### Matins reading
 
-A folded block at the bottom of the callout holds the day's reading from Matins, the night office of the Breviary: the Church's own short life of the saint, or a Father's sermon on the feast. Click it to open it. It follows the 1960 rubrics: first- and second-class feasts give the three lessons of the second nocturn, and third-class feasts and commemorated saints give the single shortened historical lesson. On a day without a feast of its own, such as an Ember day, it gives the lesson of the commemorated saint and names them in the heading.
+The last line links to a note with the day's reading from Matins, the night office of the Breviary: the Church's own short life of the saint, or a Father's sermon on the feast. Festa creates the note the first time it is needed, one per saint or feast, in the `Festa/Matins` folder (you can change the folder). The daily note stays short, and the reading is one click away.
 
-Choose Latin and English, Latin, English, or none in the settings. Days whose lessons would come from the Common, such as ordinary weekdays and most minor commemorations, have no reading.
+The reading follows the 1960 rubrics: first- and second-class feasts give the three lessons of the second nocturn, and third-class feasts and commemorated saints give the single shortened historical lesson. On a day without a feast of its own, such as an Ember day, the link goes to the commemorated saint's reading and names them.
+
+Choose Latin and English, Latin, English, or none in the settings. Refreshing a daily note rewrites its reading note in the current language. Days whose lessons would come from the Common, such as ordinary weekdays and most minor commemorations, have no reading.
 
 ### Properties
 
@@ -101,6 +97,7 @@ SORT file.name ASC
 | Layout | Full puts each detail on its own line. Compact fits the feast on one line. |
 | Fasting and abstinence | 1962 discipline, current law, or don't show. |
 | Matins reading | Latin and English, Latin, English, or don't show. |
+| Matins notes folder | Where the reading notes are kept. Defaults to `Festa/Matins`. |
 | Callout template | The lines of the callout, built from tokens (see below). Changing language or layout replaces the template unless you have edited it. |
 | Insert callout | Add the callout at the top of the note. |
 | Insert properties | Add the properties listed above. |
@@ -127,7 +124,7 @@ SORT file.name ASC
 | `{fasting}` / `{fasting_la}` | Fast and abstinence / Jejunium et abstinentia |
 | `{readings}` / `{readings_la}` | Epistle: Heb 9:2–12 · Gospel: Luke 13:6–17 / Epistola: Hebr 9:2–12 · Evangelium: Luc 13:6–17 |
 | `{epistle}`, `{gospel}`, `{lessons}` | Each reference on its own, with `_la` versions |
-| `{matins}` | The folded Matins reading. Put it on a line of its own. |
+| `{matins}` | A link to the Matins reading note, such as `[[Festa/Matins/St. Jerome\|Matins reading]]` |
 | `{weekday_la}` | Sabbato |
 | `{pages}` | Angelus Press p. 785 · Baronius p. 708 · Lasance p. 699 |
 | `{displaced}` | Feasts that give way to this day |

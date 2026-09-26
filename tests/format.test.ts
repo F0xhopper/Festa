@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { lookup } from "../src/calendar";
-import { defaultTemplate, frontmatterFields, isDefaultTemplate, LEGACY_TEMPLATES, renderCallout } from "../src/format";
+import { matinsNoteName } from "../src/calendar";
+import {
+	defaultTemplate,
+	frontmatterFields,
+	isDefaultTemplate,
+	LEGACY_TEMPLATES,
+	matinsNoteContent,
+	matinsNotePath,
+	renderCallout,
+} from "../src/format";
 
 const today = () => lookup("2026-09-26")!;
 
@@ -96,41 +105,41 @@ describe("readings", () => {
 });
 
 describe("Matins reading", () => {
-	const full = (iso: string, matins: "both" | "la" | "en" | "off", titleLanguage: "both" | "la" | "en" = "both") =>
-		renderCallout(lookup(iso)!, { titleLanguage, matins, template: defaultTemplate("full", titleLanguage) }).split("\n");
+	const lastLine = (iso: string, titleLanguage: "both" | "la" | "en" = "both", matins: "both" | "la" | "en" | "off" = "both") => {
+		const lines = renderCallout(lookup(iso)!, { titleLanguage, matins, template: defaultTemplate("full", titleLanguage) }).split("\n");
+		return lines[lines.length - 1];
+	};
 
-	it("folds the celebration's lesson inside the feast callout, Latin then English", () => {
-		const lines = full("2026-09-30", "both");
-		const start = lines.indexOf("> > [!festa-matins]- Matins reading");
-		expect(start).toBeGreaterThan(0);
-		expect(lines[start - 1]).toBe(">");
-		expect(lines[start + 1]).toMatch(/^> > Hierónymus, Stridóne in Dalmátia natus/);
-		expect(lines).toContain("> > ---");
-		expect(lines[lines.length - 1]).toMatch(/^> > .*\S/);
-		expect(lines.slice(lines.indexOf("> > ---")).some((l) => l.startsWith("> > Jerome, born at Stridon"))).toBe(true);
-		expect(lines.every((l) => l.startsWith(">"))).toBe(true);
+	it("ends the callout with a link to the reading's note", () => {
+		expect(lastLine("2026-09-30")).toBe("> [[Festa/Matins/St. Jerome|Matins reading]]");
+		expect(matinsNotePath(lookup("2026-09-30")!, "Liturgy/Readings/")).toBe("Liturgy/Readings/St. Jerome.md");
 	});
 
-	it("uses a commemorated saint's lesson on a day without its own, and says whose it is", () => {
-		const lines = full("2026-09-26", "en");
-		expect(lines).toContain("> > [!festa-matins]- Matins reading · Sts. Cyprian & Justina");
-		expect(lines.some((l) => l.startsWith("> > Cyprian was firstly a warlock"))).toBe(true);
-		expect(lines).not.toContain("> > ---");
+	it("names the commemorated saint when the reading is theirs", () => {
+		expect(lastLine("2026-09-26")).toBe("> [[Festa/Matins/Sts. Cyprian & Justina|Matins reading · Sts. Cyprian & Justina]]");
+		expect(lastLine("2026-09-26", "la")).toBe("> [[Festa/Matins/Sts. Cyprian & Justina|Lectio ad Matutinum · Ss. Cypriani et Justinæ Martyrum]]");
 	});
 
-	it("titles the reading in Latin with the Latin template", () => {
-		expect(full("2026-09-26", "la", "la")).toContain("> > [!festa-matins]- Lectio ad Matutinum · Ss. Cypriani et Justinæ Martyrum");
+	it("keeps note names unique when two feasts share a title", () => {
+		expect(matinsNoteName("sancti:12-26c:4:w")).toBe("For Octave of the Nativity (12-26c)");
+		expect(matinsNoteName("sancti:12-27c:4:w")).toBe("For Octave of the Nativity (12-27c)");
+		expect(matinsNoteName("sancti:09-30:3:w")).toBe("St. Jerome");
 	});
 
-	it("sets the source of a sermon in italics", () => {
-		const lines = full("2026-09-29", "la");
-		expect(lines).toContain("> > *Sermo sancti Gregórii Papæ*");
+	it("has no link when off or when there is no reading", () => {
+		expect(lastLine("2026-09-30", "both", "off")).not.toContain("Matins");
+		const day = lookup("2026-10-06")!;
+		if (!day.matins) expect(lastLine("2026-10-06")).not.toContain("Matins");
 	});
 
-	it("disappears when off or when the day has no lesson", () => {
-		expect(full("2026-09-30", "off").some((l) => l.includes("festa-matins"))).toBe(false);
-		const plainFeria = lookup("2026-10-06")!;
-		if (!plainFeria.matins) expect(full("2026-10-06", "both").some((l) => l.includes("festa-matins"))).toBe(false);
+	it("writes the note in Latin and English, with the sermon's source in italics", () => {
+		const note = matinsNoteContent(lookup("2026-09-29")!, "both");
+		expect(note.startsWith("# Dedication of St. Michael the Archangel\n\n*In Dedicatione S. Michælis Archangelis*\n\n## Lectio\n\n*Sermo sancti Gregórii Papæ*\n\n")).toBe(true);
+		expect(note).toContain("## Reading\n\n*From the Sermons of Pope St. Gregory the Great*");
+		expect(note).toContain("Divinum Officium");
+		expect(matinsNoteContent(lookup("2026-09-29")!, "la")).not.toContain("## Reading");
+		expect(matinsNoteContent(lookup("2026-09-29")!, "en")).not.toContain("## Lectio");
+		expect(matinsNoteContent(lookup("2026-09-29")!, "off")).toBe("");
 	});
 });
 

@@ -2,7 +2,15 @@ import { type App, PluginSettingTab, Setting } from "obsidian";
 import { dataRange } from "./calendar";
 import { dailyNoteLocation } from "./daily-notes";
 import type { FastingDiscipline } from "./fasting";
-import { defaultTemplate, isDefaultTemplate, type Layout, type MatinsLanguage, TOKENS, type TitleLanguage } from "./format";
+import {
+	DEFAULT_MATINS_FOLDER,
+	defaultTemplate,
+	isDefaultTemplate,
+	type Layout,
+	type MatinsLanguage,
+	TOKENS,
+	type TitleLanguage,
+} from "./format";
 import type FestaPlugin from "./main";
 
 export interface FestaSettings {
@@ -10,6 +18,7 @@ export interface FestaSettings {
 	layout: Layout;
 	fasting: FastingDiscipline;
 	matins: MatinsLanguage;
+	matinsFolder: string;
 	template: string;
 	insertFrontmatter: boolean;
 	frontmatterPrefix: string;
@@ -26,6 +35,7 @@ export const DEFAULT_SETTINGS: FestaSettings = {
 	layout: "full",
 	fasting: "traditional",
 	matins: "both",
+	matinsFolder: DEFAULT_MATINS_FOLDER,
 	template: defaultTemplate("full", "both"),
 	insertFrontmatter: true,
 	frontmatterPrefix: "feast",
@@ -99,7 +109,7 @@ export class FestaSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Matins reading")
-			.setDesc("A reading about the saint or feast from the night office, folded under the feast until you open it.")
+			.setDesc("Link to a note with the reading about the saint or feast from the night office.")
 			.addDropdown((d) =>
 				d
 					.addOptions({ both: "Latin and English", la: "Latin", en: "English", off: "Don't show" })
@@ -108,6 +118,16 @@ export class FestaSettingTab extends PluginSettingTab {
 						s.matins = value as MatinsLanguage;
 						await this.plugin.saveSettings();
 					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Matins notes folder")
+			.setDesc("Where the reading notes are kept. Festa creates one note per saint or feast.")
+			.addText((t) =>
+				t.setValue(s.matinsFolder).onChange(async (value) => {
+					s.matinsFolder = value.trim() || DEFAULT_MATINS_FOLDER;
+					await this.plugin.saveSettings();
+				}),
 			);
 
 		const templateSetting = new Setting(containerEl)

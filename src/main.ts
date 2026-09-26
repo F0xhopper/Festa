@@ -6,7 +6,7 @@ import { defaultTemplate, frontmatterFields, LEGACY_TEMPLATES, renderCallout } f
 import { ConfirmModal } from "./modals";
 import { hasMarker } from "./note-text";
 import { DEFAULT_SETTINGS, type FestaSettings, FestaSettingTab } from "./settings";
-import { refreshFile, stampFile, type StampResult } from "./stamp";
+import { ensureMatinsNote, refreshFile, stampFile, type StampResult } from "./stamp";
 
 /** Re-check shortly after stamping in case a template plugin rewrote the new file. */
 const GUARD_DELAY_MS = 1500;
@@ -68,6 +68,7 @@ export default class FestaPlugin extends Plugin {
 					new Notice(`Festa: no bundled data for ${date.slice(0, 4)}.`);
 					return;
 				}
+				void ensureMatinsNote(this.app, info, this.settings, false);
 				editor.replaceSelection(renderCallout(info, this.settings) + "\n");
 			},
 		});

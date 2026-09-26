@@ -1,3 +1,4 @@
+import { matinsNoteName } from "./calendar";
 import { rankLabel } from "./describe";
 import { fasting, type FastingDiscipline } from "./fasting";
 import { roman } from "./seasons";
@@ -12,6 +13,7 @@ export interface FormatOptions {
 	titleLanguage: TitleLanguage;
 	fasting?: FastingDiscipline;
 	matins?: MatinsLanguage;
+	matinsFolder?: string;
 	layout: Layout;
 	template: string;
 	frontmatterPrefix: string;
@@ -31,7 +33,7 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 			"> **{fasting}**",
 			"> {readings}",
 			"> *{latin_line}*",
-			"{matins}",
+			"> {matins}",
 		].join("\n"),
 		la: [
 			"> [!festa|{colour}] {title_la}",
@@ -39,7 +41,7 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 			"> Commemoratio: {comm_la}",
 			"> **{fasting_la}**",
 			"> {readings_la}",
-			"{matins}",
+			"> {matins}",
 		].join("\n"),
 		en: [
 			"> [!festa|{colour}] {title_en}",
@@ -47,7 +49,7 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 			"> Commemoration: {comm_en}",
 			"> **{fasting}**",
 			"> {readings}",
-			"{matins}",
+			"> {matins}",
 		].join("\n"),
 	},
 	compact: {
@@ -151,29 +153,40 @@ export const TOKENS = [
 	"pages", "date",
 ] as const;
 
-/** One lesson as quoted paragraphs; a short opening line such as "Sermo sancti Leonis Papæ" is set in italics. */
+export const DEFAULT_MATINS_FOLDER = "Festa/Matins";
+
+export function matinsNotePath(info: DayInfo, folder: string = DEFAULT_MATINS_FOLDER): string | null {
+	if (!info.matins) return null;
+	const dir = folder.replace(/^\/+|\/+$/g, "");
+	return `${dir ? dir + "/" : ""}${matinsNoteName(info.matins.source.id)}.md`;
+}
+
+/** A wiki link to the Matins note, labelled with whose reading it is when it belongs to a commemoration. */
+export function matinsLink(info: DayInfo, lang: MatinsLanguage, titleLanguage: TitleLanguage, folder?: string): string {
+	const path = matinsNotePath(info, folder);
+	if (!path || lang === "off" || !info.matins) return "";
+	const latin = titleLanguage === "la";
+	let label = latin ? "Lectio ad Matutinum" : "Matins reading";
+	if (info.matins.commemoration) label += ` · ${latin ? info.matins.source.title.la : info.matins.source.title.en}`;
+	return `[[${path.replace(/\.md$/, "")}|${label}]]`;
+}
+
+/** One lesson as paragraphs; a short opening line such as "Sermo sancti Leonis Papæ" is set in italics. */
 function lessonParagraphs(lesson: string): string[] {
 	const lines = lesson.split("\n").filter((l) => l.trim());
 	return lines.map((line, i) => (i === 0 && lines.length > 1 && line.length < 90 && !/[.!?:]$/.test(line) ? `*${line}*` : line));
 }
 
-/**
- * The Matins reading as a collapsed callout nested in the feast callout. It carries its own
- * "> " prefixes, so the template line is just "{matins}".
- */
-export function matinsBlock(info: DayInfo, lang: MatinsLanguage, titleLanguage: TitleLanguage): string {
+/** The contents of a Matins note. */
+export function matinsNoteContent(info: DayInfo, lang: MatinsLanguage): string {
 	const m = info.matins;
 	if (!m || lang === "off") return "";
-	const langs: ("la" | "en")[] = lang === "both" ? ["la", "en"] : [lang];
-	const texts = langs.map((l) => (l === "en" ? m.en : m.la)).filter((t): t is string => !!t);
-	if (!texts.length) return "";
-	const latinTitle = titleLanguage === "la";
-	let title = latinTitle ? "Lectio ad Matutinum" : "Matins reading";
-	if (m.commemoration) title += ` · ${latinTitle ? m.source.title.la : m.source.title.en}`;
-	const body = texts
-		.map((text) => text.split(/\n\s*\n/).flatMap(lessonParagraphs).map((p) => `> > ${p}`).join("\n> >\n"))
-		.join("\n> >\n> > ---\n> >\n");
-	return `>\n> > [!festa-matins]- ${title}\n${body}`;
+	const body = (text: string) => text.split(/\n\s*\n/).flatMap(lessonParagraphs).join("\n\n");
+	const parts = [`# ${m.source.title.en}`, `*${m.source.title.la}*`];
+	if (lang !== "en") parts.push("## Lectio", body(m.la));
+	if (lang !== "la" && m.en) parts.push("## Reading", body(m.en));
+	parts.push("---", "*From the lessons of Matins in the Roman Breviary (1960 rubrics). Text from the Divinum Officium project.*");
+	return parts.join("\n\n") + "\n";
 }
 
 function readingsLine(r: ReadingRefs | undefined, la: boolean): string {
@@ -190,6 +203,7 @@ export function tokens(
 	lang: TitleLanguage,
 	discipline: FastingDiscipline = "traditional",
 	matins: MatinsLanguage = "both",
+	matinsFolder: string = DEFAULT_MATINS_FOLDER,
 ): Record<string, string> {
 	const fast = fasting(info, discipline);
 	const en = info.readings?.en;
@@ -227,7 +241,7 @@ export function tokens(
 		epistle_la: la?.e ?? "",
 		gospel_la: la?.g ?? "",
 		lessons_la: la?.l.join("; ") ?? "",
-		matins: matinsBlock(info, matins, lang),
+		matins: matinsLink(info, matins, lang, matinsFolder),
 		class: roman(info.celebration.rank),
 		class_num: String(info.celebration.rank),
 		colour: COLOUR_NAME[info.celebration.colour],
@@ -272,9 +286,9 @@ function fill(text: string, values: Record<string, string>): { text: string; use
  */
 export function renderCallout(
 	info: DayInfo,
-	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting" | "matins">,
+	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting" | "matins" | "matinsFolder">,
 ): string {
-	const values = tokens(info, opts.titleLanguage, opts.fasting, opts.matins);
+	const values = tokens(info, opts.titleLanguage, opts.fasting, opts.matins, opts.matinsFolder);
 	const out: string[] = [];
 	for (const line of opts.template.split(/\r?\n/)) {
 		let used = 0;

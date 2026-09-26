@@ -1,13 +1,23 @@
-import type { App, TFile } from "obsidian";
+import { type App, TFile } from "obsidian";
 import { lookup } from "./calendar";
 import type { FastingDiscipline } from "./fasting";
-import { FIELD_SUFFIXES, frontmatterFields, type MatinsLanguage, renderCallout, type TitleLanguage } from "./format";
+import {
+	FIELD_SUFFIXES,
+	frontmatterFields,
+	type MatinsLanguage,
+	matinsNoteContent,
+	matinsNotePath,
+	renderCallout,
+	type TitleLanguage,
+} from "./format";
+import type { DayInfo } from "./types";
 import { CALLOUT_MARKER, dropEmptyFrontmatter, hasMarker, insertAfterFrontmatter, removeCallout, splitFrontmatter } from "./note-text";
 
 export interface StampSettings {
 	titleLanguage: TitleLanguage;
 	fasting: FastingDiscipline;
 	matins: MatinsLanguage;
+	matinsFolder: string;
 	template: string;
 	frontmatterPrefix: string;
 	insertFrontmatter: boolean;
@@ -35,6 +45,7 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
 		});
 	}
 	if (s.insertCallout) {
+		await ensureMatinsNote(app, info, s, false);
 		const callout = renderCallout(info, s);
 		await app.vault.process(file, (data) => {
 			const [, body] = splitFrontmatter(data);
@@ -49,7 +60,9 @@ export async function stampFile(app: App, file: TFile, date: string, s: StampSet
  * current prefix), then add the feast again with the current settings.
  */
 export async function refreshFile(app: App, file: TFile, date: string, s: StampSettings): Promise<StampResult> {
-	if (!lookup(date)) return "out-of-range";
+	const info = lookup(date);
+	if (!info) return "out-of-range";
+	if (s.insertCallout) await ensureMatinsNote(app, info, s, true);
 	const current = await app.vault.read(file);
 	const [head] = splitFrontmatter(current);
 	const keys = FIELD_SUFFIXES.map((suffix) => s.frontmatterPrefix + suffix);
@@ -60,4 +73,25 @@ export async function refreshFile(app: App, file: TFile, date: string, s: StampS
 	}
 	await app.vault.process(file, (data) => dropEmptyFrontmatter(removeCallout(data)));
 	return stampFile(app, file, date, s);
+}
+
+/**
+ * Write the Matins note the daily note links to. Festa owns these notes: an existing one is
+ * rewritten only when refreshing, so the text follows the current language setting.
+ */
+export async function ensureMatinsNote(app: App, info: DayInfo, s: StampSettings, overwrite: boolean): Promise<void> {
+	const path = matinsNotePath(info, s.matinsFolder);
+	const content = matinsNoteContent(info, s.matins);
+	if (!path || !content) return;
+	const existing = app.vault.getAbstractFileByPath(path);
+	if (existing instanceof TFile) {
+		if (overwrite) await app.vault.process(existing, (old) => (old === content ? old : content));
+		return;
+	}
+	const parts = path.split("/").slice(0, -1);
+	for (let i = 1; i <= parts.length; i++) {
+		const dir = parts.slice(0, i).join("/");
+		if (!app.vault.getAbstractFileByPath(dir)) await app.vault.createFolder(dir);
+	}
+	await app.vault.create(path, content);
 }

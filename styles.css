@@ -21,8 +21,3 @@
 .festa-template-input { width: 100%; min-width: 280px; font-family: var(--font-monospace); }
 .festa-invalid { border-color: var(--text-error); }
 
-/* The Matins reading, folded inside the feast callout. */
-.callout[data-callout="festa-matins"] {
-	--callout-color: 120, 113, 108;
-	--callout-icon: lucide-book-open;
-}

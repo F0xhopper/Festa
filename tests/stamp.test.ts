@@ -6,9 +6,15 @@ import { splitFrontmatter } from "../src/note-text";
 import { refreshFile, stampFile, type StampSettings } from "../src/stamp";
 
 /** A fake vault holding note text, with a naive processFrontMatter good enough for flat YAML. */
-function fakeApp(files: Record<string, string>) {
+function fakeApp(files: Record<string, string>, folders = new Set<string>()) {
 	const app = {
 		vault: {
+			getAbstractFileByPath: (p: string) => (p in files ? new TFile(p) : folders.has(p) ? { path: p } : null),
+			createFolder: async (p: string) => void folders.add(p),
+			create: async (p: string, data: string) => {
+				files[p] = data;
+				return new TFile(p);
+			},
 			read: async (f: TFile) => files[f.path] ?? "",
 			process: async (f: TFile, fn: (d: string) => string) => (files[f.path] = fn(files[f.path] ?? "")),
 		},
@@ -35,6 +41,7 @@ const SETTINGS: StampSettings = {
 	titleLanguage: "both",
 	fasting: "traditional",
 	matins: "off",
+	matinsFolder: "Festa/Matins",
 	template: defaultTemplate("full", "both"),
 	frontmatterPrefix: "feast",
 	insertFrontmatter: true,
@@ -136,15 +143,25 @@ describe("refreshFile", () => {
 		expect(files["n.md"].startsWith("> [!festa|violet] Ember Saturday of September\n")).toBe(true);
 	});
 
-	it("removes the nested Matins reading with the callout", async () => {
-		const files = { "n.md": "x\n" };
-		const app = fakeApp(files);
+	it("creates the Matins note once, and rewrites it only on refresh", async () => {
+		const files: Record<string, string> = { "Daily/2026-09-30.md": "x\n" };
+		const folders = new Set<string>();
+		const app = fakeApp(files, folders);
+		const file = new TFile("Daily/2026-09-30.md");
 		const s = { ...SETTINGS, insertFrontmatter: false, matins: "both" as const };
-		await stampFile(app, new TFile("n.md"), "2026-09-30", s);
-		expect(files["n.md"]).toContain("[!festa-matins]");
-		await refreshFile(app, new TFile("n.md"), "2026-09-30", { ...s, matins: "off" });
-		expect(files["n.md"]).not.toContain("festa-matins");
-		expect(files["n.md"].endsWith("\n\nx\n")).toBe(true);
+		await stampFile(app, file, "2026-09-30", s);
+		expect(files["Daily/2026-09-30.md"]).toContain("> [[Festa/Matins/St. Jerome|Matins reading]]");
+		expect([...folders]).toEqual(["Festa", "Festa/Matins"]);
+		expect(files["Festa/Matins/St. Jerome.md"]).toMatch(/^# St\. Jerome\n/);
+		expect(files["Festa/Matins/St. Jerome.md"]).toContain("## Reading");
+
+		files["Festa/Matins/St. Jerome.md"] = "edited";
+		await stampFile(app, new TFile("Daily/2026-10-06.md"), "2026-09-30", s);
+		expect(files["Festa/Matins/St. Jerome.md"]).toBe("edited");
+
+		await refreshFile(app, file, "2026-09-30", { ...s, matins: "la" });
+		expect(files["Festa/Matins/St. Jerome.md"]).toContain("## Lectio");
+		expect(files["Festa/Matins/St. Jerome.md"]).not.toContain("## Reading");
 	});
 
 	it("is stable when run twice", async () => {
@@ -154,6 +171,6 @@ describe("refreshFile", () => {
 		const once = files["n.md"];
 		await refreshFile(app, new TFile("n.md"), "2026-09-26", SETTINGS);
 		expect(files["n.md"]).toBe(once);
-		expect((once.match(/\[!festa\|/g) ?? []).length).toBe(1);
+		expect((once.match(/\[!festa/g) ?? []).length).toBe(1);
 	});
 });
