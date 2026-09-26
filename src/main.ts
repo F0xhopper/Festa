@@ -86,6 +86,8 @@ export default class FestaPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(() => {
 			this.registerEvent(this.app.vault.on("create", (file) => this.onCreate(file)));
+			this.registerEvent(this.app.workspace.on("file-open", (file) => this.onOpen(file)));
+			this.onOpen(this.app.workspace.getActiveFile());
 		});
 	}
 
@@ -130,6 +132,16 @@ export default class FestaPlugin extends Plugin {
 				this.later(GUARD_DELAY_MS, () => void this.stampQuietly(file, date));
 			});
 		});
+	}
+
+	/** Notes created moments ago are left to the create handler, which waits for templates. */
+	private onOpen(file: TFile | null): void {
+		if (!file || this.settings.stampOnOpen === "off") return;
+		if (Date.now() - file.stat.ctime < 5000) return;
+		const date = dateForFile(file, this.location());
+		if (!date) return;
+		if (this.settings.stampOnOpen === "today" && date !== todayISO()) return;
+		void this.stampQuietly(file, date);
 	}
 
 	private async stampQuietly(file: TFile, date: string): Promise<StampResult | null> {

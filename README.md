@@ -25,6 +25,7 @@ The callout is tinted with the colour of the day: violet, green, red, white, bla
 ## Using it
 
 - **New daily notes** get their feast automatically, whether you create them with the core Daily notes plugin, the Calendar plugin or Periodic Notes. Festa follows your daily notes folder and date format.
+- **Notes made ahead of time** get their feast when you open them. By default this applies to today's note only, so browsing old notes changes nothing.
 - **Insert feast for this note** adds the feast to the daily note you have open, if it does not have one yet.
 - **Insert feast callout here** puts the callout at the cursor in any note. It uses the note's date when the note is a daily note, and today otherwise.
 - **Add feasts to all daily notes** fills in every existing daily note that has no feast yet. It asks before editing anything and never touches a note twice.
@@ -49,6 +50,7 @@ SORT file.name ASC
 | Insert callout / Insert properties | Turn either part off. |
 | Property prefix | Change `feast`, `feast_la` … to another prefix if `feast` clashes with your own properties. |
 | Add automatically | Turn off to add feasts only through the commands. |
+| Add when opening | Today's note only (default), any daily note, or never. |
 | Folder and date format overrides | Only needed if Festa cannot read your daily notes settings. |
 | Delay after creation | How long to wait before writing, so template plugins finish first. |
 

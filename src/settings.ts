@@ -12,6 +12,7 @@ export interface FestaSettings {
 	frontmatterPrefix: string;
 	insertCallout: boolean;
 	autoInsert: boolean;
+	stampOnOpen: "today" | "any" | "off";
 	folderOverride: string;
 	dateFormatOverride: string;
 	stampDelayMs: number;
@@ -25,6 +26,7 @@ export const DEFAULT_SETTINGS: FestaSettings = {
 	frontmatterPrefix: "feast",
 	insertCallout: true,
 	autoInsert: true,
+	stampOnOpen: "today",
 	folderOverride: "",
 	dateFormatOverride: "",
 	stampDelayMs: 500,
@@ -145,6 +147,19 @@ export class FestaSettingTab extends PluginSettingTab {
 					s.autoInsert = value;
 					await this.plugin.saveSettings();
 				}),
+			);
+
+		new Setting(containerEl)
+			.setName("Add when opening")
+			.setDesc("Add the feast to a daily note that has none when you open it. This covers notes you created ahead of time.")
+			.addDropdown((d) =>
+				d
+					.addOptions({ today: "Today's note only", any: "Any daily note", off: "Never" })
+					.setValue(s.stampOnOpen)
+					.onChange(async (value) => {
+						s.stampOnOpen = value as FestaSettings["stampOnOpen"];
+						await this.plugin.saveSettings();
+					}),
 			);
 
 		const loc = dailyNoteLocation(s);
