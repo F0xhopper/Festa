@@ -1,0 +1,179 @@
+import { type App, PluginSettingTab, Setting } from "obsidian";
+import { dataRange } from "./calendar";
+import { dailyNoteLocation } from "./daily-notes";
+import { DEFAULT_TEMPLATES, TOKENS, type TitleLanguage } from "./format";
+import type FestaPlugin from "./main";
+
+export interface FestaSettings {
+	titleLanguage: TitleLanguage;
+	template: string;
+	insertFrontmatter: boolean;
+	frontmatterPrefix: string;
+	insertCallout: boolean;
+	autoInsert: boolean;
+	folderOverride: string;
+	dateFormatOverride: string;
+	stampDelayMs: number;
+}
+
+export const DEFAULT_SETTINGS: FestaSettings = {
+	titleLanguage: "both",
+	template: DEFAULT_TEMPLATES.both,
+	insertFrontmatter: true,
+	frontmatterPrefix: "feast",
+	insertCallout: true,
+	autoInsert: true,
+	folderOverride: "",
+	dateFormatOverride: "",
+	stampDelayMs: 500,
+};
+
+const PREFIX_RE = /^[a-z][a-z0-9_]*$/;
+
+export class FestaSettingTab extends PluginSettingTab {
+	constructor(
+		app: App,
+		private readonly plugin: FestaPlugin,
+	) {
+		super(app, plugin);
+	}
+
+	display(): void {
+		const { containerEl } = this;
+		const s = this.plugin.settings;
+		containerEl.empty();
+
+		new Setting(containerEl).setName("Display").setHeading();
+
+		new Setting(containerEl)
+			.setName("Title language")
+			.setDesc("Language for the feast title and commemorations in the callout.")
+			.addDropdown((d) =>
+				d
+					.addOptions({ both: "Latin and English", la: "Latin", en: "English" })
+					.setValue(s.titleLanguage)
+					.onChange(async (value) => {
+						const next = value as TitleLanguage;
+						if (s.template === DEFAULT_TEMPLATES[s.titleLanguage]) s.template = DEFAULT_TEMPLATES[next];
+						s.titleLanguage = next;
+						await this.plugin.saveSettings();
+						this.display();
+					}),
+			);
+
+		const templateSetting = new Setting(containerEl)
+			.setName("Callout template")
+			.setDesc(
+				`Tokens: ${TOKENS.map((t) => `{${t}}`).join(" ")}. A line whose tokens are all empty is left out.`,
+			)
+			.addTextArea((t) => {
+				t.setValue(s.template).onChange(async (value) => {
+					s.template = value;
+					await this.plugin.saveSettings();
+				});
+				t.inputEl.rows = 6;
+				t.inputEl.addClass("festa-template-input");
+			})
+			.addExtraButton((b) =>
+				b
+					.setIcon("rotate-ccw")
+					.setTooltip("Reset to default")
+					.onClick(async () => {
+						s.template = DEFAULT_TEMPLATES[s.titleLanguage];
+						await this.plugin.saveSettings();
+						this.display();
+					}),
+			);
+		templateSetting.settingEl.addClass("festa-template-setting");
+
+		new Setting(containerEl)
+			.setName("Insert callout")
+			.setDesc("Add the feast callout at the top of the note body.")
+			.addToggle((t) =>
+				t.setValue(s.insertCallout).onChange(async (value) => {
+					s.insertCallout = value;
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName("Insert properties")
+			.setDesc("Add the feast as note properties, so it can be searched and queried.")
+			.addToggle((t) =>
+				t.setValue(s.insertFrontmatter).onChange(async (value) => {
+					s.insertFrontmatter = value;
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName("Property prefix")
+			.setDesc("Property names start with this, for example feast, feast_la, feast_class. Lowercase letters, digits and underscores.")
+			.addText((t) =>
+				t.setValue(s.frontmatterPrefix).onChange(async (value) => {
+					const v = value.trim();
+					t.inputEl.toggleClass("festa-invalid", !PREFIX_RE.test(v));
+					if (!PREFIX_RE.test(v)) return;
+					s.frontmatterPrefix = v;
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl).setName("Daily notes").setHeading();
+
+		new Setting(containerEl)
+			.setName("Add automatically")
+			.setDesc("Add the feast when a new daily note is created.")
+			.addToggle((t) =>
+				t.setValue(s.autoInsert).onChange(async (value) => {
+					s.autoInsert = value;
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		const loc = dailyNoteLocation(s);
+		new Setting(containerEl)
+			.setName("Folder override")
+			.setDesc(`Leave empty to follow your daily notes settings. Currently using: ${loc.folder || "vault root"}.`)
+			.addText((t) =>
+				t
+					.setPlaceholder("Daily")
+					.setValue(s.folderOverride)
+					.onChange(async (value) => {
+						s.folderOverride = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Date format override")
+			.setDesc(`Moment.js format of daily note names. Leave empty to follow your daily notes settings. Currently using: ${loc.format}.`)
+			.addText((t) =>
+				t
+					.setValue(s.dateFormatOverride)
+					.onChange(async (value) => {
+						s.dateFormatOverride = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Delay after creation")
+			.setDesc("Milliseconds to wait before adding the feast, so templates can finish first.")
+			.addText((t) =>
+				t.setValue(String(s.stampDelayMs)).onChange(async (value) => {
+					const n = Number(value);
+					if (!Number.isFinite(n) || n < 0 || n > 10000) return;
+					s.stampDelayMs = Math.round(n);
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		const range = dataRange();
+		new Setting(containerEl).setName("About the data").setHeading();
+		containerEl.createEl("p", {
+			cls: "setting-item-description",
+			text: `Bundled calendar: ${range.from}–${range.to}, 1962 rubrics, generated ${range.generated} from Missale Meum (commit ${range.commit}). No network access is used.`,
+		});
+	}
+}
