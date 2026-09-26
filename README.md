@@ -1,6 +1,6 @@
 # Festa
 
-Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, fast and abstinence, the Epistle and Gospel of the day's Mass, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day. You choose which lines appear. Optionally, a last line links to the Matins reading from the Breviary about the saint or feast.
+Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, fast and abstinence, the Epistle and Gospel of the day's Mass, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day. You choose which lines appear.
 
 Everything is bundled with the plugin. It works offline, on desktop and mobile, and never contacts a server.
 
@@ -69,14 +69,6 @@ A bold line marks the days of fasting and abstinence. Choose the rules in the se
 
 The readings line gives the references for the Epistle and Gospel of the day's Mass, in English, or in Latin with the Latin template. On Good Friday it lists the two lessons and the Passion. The Old Testament lessons of Ember Wednesdays and Saturdays are in the `{lessons}` token, if you want them in your template.
 
-### Matins reading (optional)
-
-Off by default. Turn on **Matins reading** in the settings and the last line links to the day's reading from Matins, the night office of the Breviary: the Church's own short life of the saint, or a Father's sermon on the feast. Click it and the reading opens in a window, in Latin and English, straight from the text bundled with Festa. Nothing is written to your vault. The window has a **Save as note** button if you want to keep a reading; it goes in `Festa/Matins`. The command **Open the reading of the day** does the same for the daily note you have open.
-
-The reading follows the 1960 rubrics: first- and second-class feasts give the three lessons of the second nocturn, and third-class feasts and commemorated saints give the single shortened historical lesson. On a day without a feast of its own, such as an Ember day, the link goes to the commemorated saint's reading and names them.
-
-Choose Latin and English, Latin, or English in the settings. Days whose lessons would come from the Common, such as ordinary weekdays and most minor commemorations, have no reading.
-
 ### Properties
 
 Festa can also write the feast into note properties, so Dataview or Bases can query it: `feast`, `feast_la`, `feast_class`, `feast_color`, `feast_comm`, `feast_season`, `feast_week` and `feast_missal`, which holds the page numbers in the Angelus Press, Baronius and Lasance hand missals. Properties are on by default. Turn off **Insert properties** if you only want the callout.
@@ -99,7 +91,6 @@ SORT file.name ASC
 | Show the readings | The Epistle and Gospel references. |
 | Show the Latin title and Roman date | The italic Latin line. |
 | Fasting and abstinence | 1962 discipline, current law, or don't show. |
-| Matins reading | Off by default. Latin and English, Latin, or English. |
 | Custom template | Empty by default, which means the lines follow the options above. Write your own template here for full control. |
 | Insert callout | Add the callout at the top of the note. |
 | Insert properties | Add the properties listed above. |
@@ -126,7 +117,6 @@ SORT file.name ASC
 | `{fasting}` / `{fasting_la}` | Fast and abstinence / Jejunium et abstinentia |
 | `{readings}` / `{readings_la}` | Epistle: Heb 9:2–12 · Gospel: Luke 13:6–17 / Epistola: Hebr 9:2–12 · Evangelium: Luc 13:6–17 |
 | `{epistle}`, `{gospel}`, `{lessons}` | Each reference on its own, with `_la` versions |
-| `{matins}` | The link to the Matins reading: `[Matins reading](obsidian://festa?matins=2026-09-30)` |
 | `{weekday_la}` | Sabbato |
 | `{pages}` | Angelus Press p. 785 · Baronius p. 708 · Lasance p. 699 |
 | `{displaced}` | Feasts that give way to this day |
@@ -146,7 +136,7 @@ Festa waits briefly after a note is created and checks again a moment later, so 
 
 ## Data
 
-The calendar covers **2020 to 2040** and follows the 1962 rubrics for the general Roman calendar. The reading references and the Matins lessons come from the Mass and Breviary texts of the [Divinum Officium](https://github.com/DivinumOfficium/divinum-officium) project (MIT licence), which Missale Meum builds on. `scripts/matins.py` resolves the Breviary files for the 1960 rubrics. It is generated from [Missale Meum](https://github.com/mmolenda/missalemeum) by Marcin Molenda (MIT licence), pinned to a specific commit that the settings tab shows.
+The calendar covers **2020 to 2040** and follows the 1962 rubrics for the general Roman calendar. The reading references come from the Mass texts of the [Divinum Officium](https://github.com/DivinumOfficium/divinum-officium) project (MIT licence), which Missale Meum builds on. It is generated from [Missale Meum](https://github.com/mmolenda/missalemeum) by Marcin Molenda (MIT licence), pinned to a specific commit that the settings tab shows.
 
 Each bundled year is checked against the live Missale Meum service and against an independent implementation, Joe Antognini's [tridentine_calendar](https://github.com/joe-antognini/tridentine_calendar). The results are logged in `scripts/VERIFIED.md`. Local corrections live in `scripts/overrides.json`:
 
@@ -183,7 +173,6 @@ Pushing a tag builds `main.js` and creates a draft GitHub release with the three
 - Rosary mysteries, weekday and monthly devotions, First Friday and First Saturday, the seasonal Marian antiphon.
 - Holy days of obligation by country.
 - The Collect and the Roman Martyrology of the day.
-- Matins readings for Sundays and ferias (the patristic homilies and occurring Scripture).
 - Later: national and religious-order calendars.
 
 ## Licence

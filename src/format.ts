@@ -1,4 +1,3 @@
-import { matinsNoteName } from "./calendar";
 import { rankLabel } from "./describe";
 import { fasting, type FastingDiscipline } from "./fasting";
 import { roman } from "./seasons";
@@ -7,12 +6,10 @@ import { COLOUR_NAME, type DayInfo, type ReadingRefs } from "./types";
 export type TitleLanguage = "both" | "la" | "en";
 export type Layout = "full" | "compact";
 
-export type MatinsLanguage = "both" | "la" | "en" | "off";
 
 export interface FormatOptions {
 	titleLanguage: TitleLanguage;
 	fasting?: FastingDiscipline;
-	matins?: MatinsLanguage;
 	layout: Layout;
 	template: string;
 	frontmatterPrefix: string;
@@ -33,8 +30,8 @@ export const DEFAULT_SHOW: ShowOptions = { rank: true, commemorations: true, rea
 /**
  * Template syntax: {token} is replaced by its value. [? … ?] is an optional segment,
  * dropped when every token inside it is empty. A line that uses tokens and whose tokens
- * all came out empty is dropped. Fasting and the Matins link have their own settings and
- * vanish when those are off, so they are always in the generated template.
+ * all came out empty is dropped. Fasting has its own setting and vanishes when it is off,
+ * so it is always in the generated template.
  */
 export function defaultTemplate(layout: Layout, lang: TitleLanguage, show: ShowOptions = DEFAULT_SHOW): string {
 	const la = lang === "la";
@@ -57,7 +54,6 @@ export function defaultTemplate(layout: Layout, lang: TitleLanguage, show: ShowO
 	lines.push(`> **${fasting}**`);
 	if (show.readings) lines.push(la ? "> {readings_la}" : "> {readings}");
 	if (show.latin && lang === "both") lines.push("> *{latin_line}*");
-	lines.push("> {matins}");
 	return lines.join("\n");
 }
 
@@ -175,51 +171,11 @@ export function isDefaultTemplate(template: string): boolean {
 }
 
 export const TOKENS = [
-	"title", "title_alt", "title_la", "title_en", "title_la_sub", "latin_line", "rank", "fasting", "fasting_la", "readings", "readings_la", "epistle", "gospel", "lessons", "epistle_la", "gospel_la", "lessons_la", "matins", "class", "class_num", "colour", "colour_code",
+	"title", "title_alt", "title_la", "title_en", "title_la_sub", "latin_line", "rank", "fasting", "fasting_la", "readings", "readings_la", "epistle", "gospel", "lessons", "epistle_la", "gospel_la", "lessons_la", "class", "class_num", "colour", "colour_code",
 	"comm", "comm_alt", "comm_la", "comm_en", "comm_both", "displaced", "weekday_la",
 	"week_label", "week_label_la", "week", "season", "season_la", "roman_date", "roman_date_long",
 	"pages", "date",
 ] as const;
-
-/** Where "Save as note" in the reading window keeps a reading. */
-export const DEFAULT_MATINS_FOLDER = "Festa/Matins";
-
-export function matinsNotePath(info: DayInfo, folder: string = DEFAULT_MATINS_FOLDER): string | null {
-	if (!info.matins) return null;
-	const dir = folder.replace(/^\/+|\/+$/g, "");
-	return `${dir ? dir + "/" : ""}${matinsNoteName(info.matins.source.id)}.md`;
-}
-
-export function matinsUri(date: string): string {
-	return `obsidian://festa?matins=${date}`;
-}
-
-/** An obsidian://festa link that opens the day's Matins reading in a window, labelled with whose reading it is. */
-export function matinsLink(info: DayInfo, lang: MatinsLanguage, titleLanguage: TitleLanguage): string {
-	if (lang === "off" || !info.matins) return "";
-	const latin = titleLanguage === "la";
-	let label = latin ? "Lectio ad Matutinum" : "Matins reading";
-	if (info.matins.commemoration) label += ` · ${latin ? info.matins.source.title.la : info.matins.source.title.en}`;
-	return `[${label}](${matinsUri(info.date)})`;
-}
-
-/** One lesson as paragraphs; a short opening line such as "Sermo sancti Leonis Papæ" is set in italics. */
-function lessonParagraphs(lesson: string): string[] {
-	const lines = lesson.split("\n").filter((l) => l.trim());
-	return lines.map((line, i) => (i === 0 && lines.length > 1 && line.length < 90 && !/[.!?:]$/.test(line) ? `*${line}*` : line));
-}
-
-/** The contents of a Matins note. */
-export function matinsNoteContent(info: DayInfo, lang: MatinsLanguage): string {
-	const m = info.matins;
-	if (!m || lang === "off") return "";
-	const body = (text: string) => text.split(/\n\s*\n/).flatMap(lessonParagraphs).join("\n\n");
-	const parts = [`# ${m.source.title.en}`, `*${m.source.title.la}*`];
-	if (lang !== "en") parts.push("## Lectio", body(m.la));
-	if (lang !== "la" && m.en) parts.push("## Reading", body(m.en));
-	parts.push("---", "*From the lessons of Matins in the Roman Breviary (1960 rubrics). Text from the Divinum Officium project.*");
-	return parts.join("\n\n") + "\n";
-}
 
 function readingsLine(r: ReadingRefs | undefined, la: boolean): string {
 	if (!r) return "";
@@ -234,7 +190,6 @@ export function tokens(
 	info: DayInfo,
 	lang: TitleLanguage,
 	discipline: FastingDiscipline = "traditional",
-	matins: MatinsLanguage = "off",
 ): Record<string, string> {
 	const fast = fasting(info, discipline);
 	const en = info.readings?.en;
@@ -272,7 +227,6 @@ export function tokens(
 		epistle_la: la?.e ?? "",
 		gospel_la: la?.g ?? "",
 		lessons_la: la?.l.join("; ") ?? "",
-		matins: matinsLink(info, matins, lang),
 		class: roman(info.celebration.rank),
 		class_num: String(info.celebration.rank),
 		colour: COLOUR_NAME[info.celebration.colour],
@@ -317,9 +271,9 @@ function fill(text: string, values: Record<string, string>): { text: string; use
  */
 export function renderCallout(
 	info: DayInfo,
-	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting" | "matins">,
+	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting">,
 ): string {
-	const values = tokens(info, opts.titleLanguage, opts.fasting, opts.matins);
+	const values = tokens(info, opts.titleLanguage, opts.fasting);
 	const out: string[] = [];
 	for (const line of opts.template.split(/\r?\n/)) {
 		let used = 0;

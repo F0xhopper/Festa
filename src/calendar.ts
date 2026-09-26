@@ -1,47 +1,14 @@
 import titlesJson from "./data/titles.json";
 import meta from "./data/meta.json";
 import readingsJson from "./data/readings.json";
-import matinsJson from "./data/matins.json";
 import { YEARS } from "./data/index";
 import { dayOfYear, parseISO, weekday } from "./dates";
 import { romanDate } from "./roman-date";
 import { weekInfo, weekdayLa } from "./seasons";
-import type { Bilingual, Colour, DayInfo, MatinsReading, MatinsText, Observance, Rank, Readings, Titles } from "./types";
+import type { Bilingual, Colour, DayInfo, Observance, Rank, Readings, Titles } from "./types";
 
 const TITLES = titlesJson as Titles;
 const READINGS = readingsJson as Readings[];
-const MATINS = matinsJson as Record<string, MatinsText>;
-
-const UNSAFE_NAME = /[\\/:*?"<>|#^[\]]/g;
-let noteNames: Map<string, string> | null = null;
-
-/**
- * File name (without folder or extension) for an observance's Matins note: its English title,
- * with the date code added when two observances share a title ("St. Agnes (01-28)").
- */
-export function matinsNoteName(id: string): string {
-	if (!noteNames) {
-		noteNames = new Map();
-		const counts = new Map<string, number>();
-		const base = (key: string) => (TITLES[key]?.en ?? key).replace(UNSAFE_NAME, "").replace(/\s+/g, " ").trim();
-		for (const key of Object.keys(MATINS)) counts.set(base(key), (counts.get(base(key)) ?? 0) + 1);
-		for (const key of Object.keys(MATINS)) {
-			const name = base(key);
-			noteNames.set(key, (counts.get(name) ?? 0) > 1 ? `${name} (${key.split(":")[1] ?? key})` : name);
-		}
-	}
-	return noteNames.get(id) ?? id.replace(UNSAFE_NAME, "");
-}
-
-function matinsFor(celebration: Observance, commemorations: Observance[]): MatinsReading | null {
-	const own = MATINS[celebration.id];
-	if (own) return { ...own, source: celebration, commemoration: false };
-	for (const c of commemorations) {
-		const text = MATINS[c.id];
-		if (text) return { ...text, source: c, commemoration: true };
-	}
-	return null;
-}
 
 export interface DataRange {
 	from: number;
@@ -100,7 +67,6 @@ export function lookup(dateISO: string): DayInfo | undefined {
 			...(baronius ? { baronius } : {}),
 		},
 		readings: READINGS[readingsIndex] ?? null,
-		matins: matinsFor(celebration, commemorations),
 		ember: flags.includes("E"),
 		weekKey,
 		...weekInfo(weekKey, date, wd),

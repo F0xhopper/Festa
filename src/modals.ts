@@ -1,4 +1,4 @@
-import { type App, Component, MarkdownRenderer, Modal, Setting } from "obsidian";
+import { type App, Modal, Setting } from "obsidian";
 
 export class ConfirmModal extends Modal {
 	private done = false;
@@ -32,39 +32,5 @@ export class ConfirmModal extends Modal {
 	onClose(): void {
 		this.contentEl.empty();
 		if (this.done) this.onConfirm();
-	}
-}
-
-/** Shows a Matins reading rendered from Markdown, with an optional action button. */
-export class ReadingModal extends Modal {
-	private readonly component = new Component();
-
-	constructor(
-		app: App,
-		private readonly markdown: string,
-		private readonly action: { text: string; run: () => void } | null,
-	) {
-		super(app);
-	}
-
-	onOpen(): void {
-		this.modalEl.addClass("festa-reading-modal");
-		const body = this.contentEl.createDiv({ cls: "festa-reading" });
-		this.component.load();
-		void MarkdownRenderer.render(this.app, this.markdown, body, "", this.component);
-		if (this.action) {
-			const { text, run } = this.action;
-			new Setting(this.contentEl).addButton((b) =>
-				b.setButtonText(text).onClick(() => {
-					this.close();
-					run();
-				}),
-			);
-		}
-	}
-
-	onClose(): void {
-		this.component.unload();
-		this.contentEl.empty();
 	}
 }

@@ -2,11 +2,11 @@ import { type Editor, type MarkdownFileInfo, type MarkdownView, Notice, Plugin, 
 import { dataRange, lookup } from "./calendar";
 import { todayISO } from "./dates";
 import { allDailyNotes, dailyNoteLocation, dateForFile } from "./daily-notes";
-import { DEFAULT_SHOW, effectiveTemplate, frontmatterFields, LEGACY_TEMPLATES, matinsNoteContent, renderCallout } from "./format";
-import { ConfirmModal, ReadingModal } from "./modals";
+import { DEFAULT_SHOW, effectiveTemplate, frontmatterFields, LEGACY_TEMPLATES, renderCallout } from "./format";
+import { ConfirmModal } from "./modals";
 import { hasMarker } from "./note-text";
 import { DEFAULT_SETTINGS, type FestaSettings, FestaSettingTab } from "./settings";
-import { ensureMatinsNote, refreshFile, stampFile, type StampResult } from "./stamp";
+import { refreshFile, stampFile, type StampResult } from "./stamp";
 
 /** Re-check shortly after stamping in case a template plugin rewrote the new file. */
 const GUARD_DELAY_MS = 1500;
@@ -84,20 +84,6 @@ export default class FestaPlugin extends Plugin {
 			callback: () => this.refreshAll(),
 		});
 
-		// obsidian://festa?matins=YYYY-MM-DD opens that day's Matins reading.
-		this.registerObsidianProtocolHandler("festa", (params) => {
-			if (params.matins) this.openMatins(params.matins);
-		});
-
-		this.addCommand({
-			id: "open-matins-reading",
-			name: "Open the reading of the day",
-			callback: () => {
-				const file = this.app.workspace.getActiveFile();
-				this.openMatins((file && dateForFile(file, this.location())) || todayISO());
-			},
-		});
-
 		this.app.workspace.onLayoutReady(() => {
 			this.registerEvent(this.app.vault.on("create", (file) => this.onCreate(file)));
 			this.registerEvent(this.app.workspace.on("file-open", (file) => this.onOpen(file)));
@@ -114,9 +100,10 @@ export default class FestaPlugin extends Plugin {
 		this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) as Partial<FestaSettings> | null) };
 		// Upgrade an unedited template from an earlier version to the current default.
 		this.settings.show = { ...DEFAULT_SHOW, ...this.settings.show };
-		// Drop settings from the removed note mode (1.2.0).
+		// Drop settings of the Matins reading, removed after 1.2.0.
 		const stored = this.settings as unknown as Record<string, unknown>;
-		if ("matinsMode" in stored || "matinsFolder" in stored) {
+		if (["matins", "matinsMode", "matinsFolder"].some((k) => k in stored)) {
+			delete stored.matins;
 			delete stored.matinsMode;
 			delete stored.matinsFolder;
 			await this.saveSettings();
@@ -129,23 +116,6 @@ export default class FestaPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
-	}
-
-	openMatins(date: string): void {
-		const info = lookup(date);
-		const lang = this.settings.matins === "off" ? "both" : this.settings.matins;
-		const markdown = info ? matinsNoteContent(info, lang) : "";
-		if (!info || !markdown) {
-			new Notice(`Festa: no Matins reading for ${date}.`);
-			return;
-		}
-		new ReadingModal(this.app, markdown, {
-			text: "Save as note",
-			run: () =>
-				void ensureMatinsNote(this.app, info, { matins: lang }, false).then(
-					(file) => file && void this.app.workspace.getLeaf(true).openFile(file),
-				),
-		}).open();
 	}
 
 	private location() {

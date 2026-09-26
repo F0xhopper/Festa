@@ -7,7 +7,6 @@ import {
 	defaultTemplate,
 	type ShowOptions,
 	type Layout,
-	type MatinsLanguage,
 	TOKENS,
 	type TitleLanguage,
 } from "./format";
@@ -18,7 +17,6 @@ export interface FestaSettings {
 	layout: Layout;
 	show: ShowOptions;
 	fasting: FastingDiscipline;
-	matins: MatinsLanguage;
 	template: string;
 	insertFrontmatter: boolean;
 	frontmatterPrefix: string;
@@ -35,7 +33,6 @@ export const DEFAULT_SETTINGS: FestaSettings = {
 	layout: "full",
 	show: { ...DEFAULT_SHOW },
 	fasting: "traditional",
-	matins: "off",
 	/** Empty means: build the template from the options above. */
 	template: "",
 	insertFrontmatter: true,
@@ -120,19 +117,6 @@ export class FestaSettingTab extends PluginSettingTab {
 					.setValue(s.fasting)
 					.onChange(async (value) => {
 						s.fasting = value as FastingDiscipline;
-						await this.plugin.saveSettings();
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName("Matins reading")
-			.setDesc("Link to the reading about the saint or feast from the night office.")
-			.addDropdown((d) =>
-				d
-					.addOptions({ both: "Latin and English", la: "Latin", en: "English", off: "Don't show" })
-					.setValue(s.matins)
-					.onChange(async (value) => {
-						s.matins = value as MatinsLanguage;
 						await this.plugin.saveSettings();
 					}),
 			);

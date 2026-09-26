@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { lookup } from "../src/calendar";
-import { matinsNoteName } from "../src/calendar";
 import {
 	DEFAULT_SHOW,
 	defaultTemplate,
@@ -8,8 +7,6 @@ import {
 	frontmatterFields,
 	isDefaultTemplate,
 	LEGACY_TEMPLATES,
-	matinsNoteContent,
-	matinsNotePath,
 	renderCallout,
 } from "../src/format";
 
@@ -17,7 +14,7 @@ const today = () => lookup("2026-09-26")!;
 
 describe("renderCallout, full layout", () => {
 	it("renders today's note as designed", () => {
-		expect(renderCallout(today(), { titleLanguage: "both", template: defaultTemplate("full", "both"), matins: "off" })).toBe(
+		expect(renderCallout(today(), { titleLanguage: "both", template: defaultTemplate("full", "both") })).toBe(
 			[
 				"> [!festa|violet] Ember Saturday of September",
 				"> Second-class Ember day · 17th week after Pentecost",
@@ -30,7 +27,7 @@ describe("renderCallout, full layout", () => {
 	});
 
 	it("drops the commemoration line when there is none", () => {
-		const out = renderCallout(lookup("2026-12-25")!, { titleLanguage: "both", template: defaultTemplate("full", "both"), matins: "off" });
+		const out = renderCallout(lookup("2026-12-25")!, { titleLanguage: "both", template: defaultTemplate("full", "both") });
 		expect(out).toBe(
 			[
 				"> [!festa|white] The Nativity of Our Lord",
@@ -42,7 +39,7 @@ describe("renderCallout, full layout", () => {
 	});
 
 	it("renders St Jerome with the corrected Latin", () => {
-		expect(renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both"), matins: "off" })).toBe(
+		expect(renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both") })).toBe(
 			[
 				"> [!festa|white] St. Jerome",
 				"> Third-class feast · 18th week after Pentecost",
@@ -53,7 +50,7 @@ describe("renderCallout, full layout", () => {
 	});
 
 	it("renders the Latin and English templates", () => {
-		expect(renderCallout(today(), { titleLanguage: "la", template: defaultTemplate("full", "la"), matins: "off" })).toBe(
+		expect(renderCallout(today(), { titleLanguage: "la", template: defaultTemplate("full", "la") })).toBe(
 			[
 				"> [!festa|violet] Sabbato Quattuor Temporum Septembris",
 				"> Classis II · Hebdomada XVII post Pentecosten · a.d. VI Kal. Oct.",
@@ -62,7 +59,7 @@ describe("renderCallout, full layout", () => {
 				"> Epistola: Hebr 9:2–12 · Evangelium: Luc 13:6–17",
 			].join("\n"),
 		);
-		expect(renderCallout(today(), { titleLanguage: "en", template: defaultTemplate("full", "en"), matins: "off" }).split("\n")[0]).toBe(
+		expect(renderCallout(today(), { titleLanguage: "en", template: defaultTemplate("full", "en") }).split("\n")[0]).toBe(
 			"> [!festa|violet] Ember Saturday of September",
 		);
 	});
@@ -106,54 +103,12 @@ describe("readings", () => {
 	});
 });
 
-describe("Matins reading", () => {
-	const lastLine = (iso: string, titleLanguage: "both" | "la" | "en" = "both", matins: "both" | "la" | "en" | "off" = "both") => {
-		const lines = renderCallout(lookup(iso)!, { titleLanguage, matins, template: defaultTemplate("full", titleLanguage) }).split("\n");
-		return lines[lines.length - 1];
-	};
-
-	it("links in-app, opening the reading without a file", () => {
-		expect(lastLine("2026-09-30")).toBe("> [Matins reading](obsidian://festa?matins=2026-09-30)");
-	});
-
-	it("names the commemorated saint when the reading is theirs", () => {
-		expect(lastLine("2026-09-26")).toBe("> [Matins reading · Sts. Cyprian & Justina](obsidian://festa?matins=2026-09-26)");
-		expect(lastLine("2026-09-26", "la")).toBe("> [Lectio ad Matutinum · Ss. Cypriani et Justinæ Martyrum](obsidian://festa?matins=2026-09-26)");
-	});
-
-	it("keeps saved-note names unique when two feasts share a title", () => {
-		expect(matinsNoteName("sancti:12-26c:4:w")).toBe("For Octave of the Nativity (12-26c)");
-		expect(matinsNoteName("sancti:12-27c:4:w")).toBe("For Octave of the Nativity (12-27c)");
-		expect(matinsNotePath(lookup("2026-09-30")!)).toBe("Festa/Matins/St. Jerome.md");
-	});
-
-	it("has no link when off or when there is no reading", () => {
-		expect(lastLine("2026-09-30", "both", "off")).not.toContain("Matins");
-		const day = lookup("2026-10-06")!;
-		if (!day.matins) expect(lastLine("2026-10-06")).not.toContain("Matins");
-	});
-
-	it("writes the reading in Latin and English, with the sermon's source in italics", () => {
-		const note = matinsNoteContent(lookup("2026-09-29")!, "both");
-		expect(note.startsWith("# Dedication of St. Michael the Archangel\n\n*In Dedicatione S. Michælis Archangelis*\n\n## Lectio\n\n*Sermo sancti Gregórii Papæ*\n\n")).toBe(true);
-		expect(note).toContain("## Reading\n\n*From the Sermons of Pope St. Gregory the Great*");
-		expect(note).toContain("Divinum Officium");
-		expect(matinsNoteContent(lookup("2026-09-29")!, "la")).not.toContain("## Reading");
-		expect(matinsNoteContent(lookup("2026-09-29")!, "en")).not.toContain("## Lectio");
-		expect(matinsNoteContent(lookup("2026-09-29")!, "off")).toBe("");
-	});
-});
-
 describe("show options", () => {
 	const render = (show: Partial<import("../src/format").ShowOptions>, lang: "both" | "la" | "en" = "both", layout: "full" | "compact" = "full") =>
 		renderCallout(lookup("2026-09-26")!, {
 			titleLanguage: lang,
 			template: defaultTemplate(layout, lang, { rank: true, commemorations: true, readings: true, latin: true, ...show }),
 		});
-
-	it("leaves the reading off by default", () => {
-		expect(renderCallout(lookup("2026-09-30")!, { titleLanguage: "both", template: defaultTemplate("full", "both") })).not.toContain("Matins");
-	});
 
 	it("drops each line when its option is off", () => {
 		expect(render({ rank: false })).not.toContain("Second-class Ember day");

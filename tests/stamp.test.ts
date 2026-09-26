@@ -3,8 +3,7 @@ import { TFile } from "obsidian";
 import type { App } from "obsidian";
 import { defaultTemplate } from "../src/format";
 import { splitFrontmatter } from "../src/note-text";
-import { lookup } from "../src/calendar";
-import { ensureMatinsNote, refreshFile, stampFile, type StampSettings } from "../src/stamp";
+import { refreshFile, stampFile, type StampSettings } from "../src/stamp";
 
 /** A fake vault holding note text, with a naive processFrontMatter good enough for flat YAML. */
 function fakeApp(files: Record<string, string>, folders = new Set<string>()) {
@@ -41,7 +40,6 @@ function fakeApp(files: Record<string, string>, folders = new Set<string>()) {
 const SETTINGS: StampSettings = {
 	titleLanguage: "both",
 	fasting: "traditional",
-	matins: "off",
 	template: defaultTemplate("full", "both"),
 	frontmatterPrefix: "feast",
 	insertFrontmatter: true,
@@ -141,30 +139,6 @@ describe("refreshFile", () => {
 		const files = { "n.md": OLD_NOTE.replace("mood: good\n", "") };
 		await refreshFile(fakeApp(files), new TFile("n.md"), "2026-09-26", { ...SETTINGS, insertFrontmatter: false });
 		expect(files["n.md"].startsWith("> [!festa|violet] Ember Saturday of September\n")).toBe(true);
-	});
-
-	it("creates no files in pop-up mode", async () => {
-		const files: Record<string, string> = { "Daily/2026-09-30.md": "x\n" };
-		const folders = new Set<string>();
-		const s = { ...SETTINGS, insertFrontmatter: false, matins: "both" as const };
-		await stampFile(fakeApp(files, folders), new TFile("Daily/2026-09-30.md"), "2026-09-30", s);
-		await refreshFile(fakeApp(files, folders), new TFile("Daily/2026-09-30.md"), "2026-09-30", s);
-		expect(Object.keys(files)).toEqual(["Daily/2026-09-30.md"]);
-		expect(folders.size).toBe(0);
-		expect(files["Daily/2026-09-30.md"]).toContain("> [Matins reading](obsidian://festa?matins=2026-09-30)");
-	});
-
-	it("saves a reading as a note only when asked, keeping an existing one", async () => {
-		const files: Record<string, string> = {};
-		const folders = new Set<string>();
-		const app = fakeApp(files, folders);
-		const info = lookup("2026-09-30")!;
-		await ensureMatinsNote(app, info, { matins: "both" }, false);
-		expect([...folders]).toEqual(["Festa", "Festa/Matins"]);
-		expect(files["Festa/Matins/St. Jerome.md"]).toMatch(/^# St\. Jerome\n/);
-		files["Festa/Matins/St. Jerome.md"] = "edited";
-		await ensureMatinsNote(app, info, { matins: "both" }, false);
-		expect(files["Festa/Matins/St. Jerome.md"]).toBe("edited");
 	});
 
 	it("is stable when run twice", async () => {
