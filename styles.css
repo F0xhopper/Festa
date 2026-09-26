@@ -1,0 +1,22 @@
+/* Festa: liturgical colours for the feast callout. Colours are "r, g, b" as Obsidian expects. */
+.callout[data-callout="festa"] {
+	--callout-color: 113, 113, 122;
+	--callout-icon: lucide-church;
+}
+.callout[data-callout="festa"][data-callout-metadata~="violet"] { --callout-color: 124, 58, 237; }
+.callout[data-callout="festa"][data-callout-metadata~="green"] { --callout-color: 22, 163, 74; }
+.callout[data-callout="festa"][data-callout-metadata~="red"] { --callout-color: 220, 38, 38; }
+.callout[data-callout="festa"][data-callout-metadata~="white"] { --callout-color: 180, 150, 60; }
+.callout[data-callout="festa"][data-callout-metadata~="black"] { --callout-color: 82, 82, 91; }
+.callout[data-callout="festa"][data-callout-metadata~="rose"] { --callout-color: 219, 112, 147; }
+
+.theme-dark .callout[data-callout="festa"][data-callout-metadata~="violet"] { --callout-color: 167, 139, 250; }
+.theme-dark .callout[data-callout="festa"][data-callout-metadata~="green"] { --callout-color: 74, 222, 128; }
+.theme-dark .callout[data-callout="festa"][data-callout-metadata~="red"] { --callout-color: 248, 113, 113; }
+.theme-dark .callout[data-callout="festa"][data-callout-metadata~="white"] { --callout-color: 234, 205, 120; }
+.theme-dark .callout[data-callout="festa"][data-callout-metadata~="black"] { --callout-color: 161, 161, 170; }
+.theme-dark .callout[data-callout="festa"][data-callout-metadata~="rose"] { --callout-color: 244, 164, 190; }
+
+.festa-template-setting { flex-wrap: wrap; }
+.festa-template-input { width: 100%; min-width: 280px; font-family: var(--font-monospace); }
+.festa-invalid { border-color: var(--text-error); }

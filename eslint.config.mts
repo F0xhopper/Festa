@@ -13,6 +13,11 @@ export default defineConfig(
 		'package.json',
 		'package-lock.json',
 		'tsconfig.json',
+		'vendor',
+		'scripts',
+		'tests',
+		'vitest.config.ts',
+		'src/data/**/*.json',
 	]),
 	{
 		languageOptions: {

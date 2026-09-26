@@ -1,5 +1,22 @@
 # Festa — v1 execution plan
 
+## Status (2026-09-26)
+
+Phases 0–3 are built, tested and pushed. Phase 4 remains: live with it in the vault, check 2026 against a printed Ordo, publish a release, submit to the community list.
+
+Where the build deviates from the plan below:
+
+- **Week and season come from the data, not from Easter arithmetic.** Each bundled day carries a week key taken from Missale Meum's temporal cycle (`Pent17`, `Epi5`, `Quad6` …). Counting from Easter would have contradicted the day's own Mass in November, where the resumed Sundays after Epiphany and the always-final "XXIV Sunday after Pentecost" break the count. `src/seasons.ts` maps keys to labels; there is no `easter()`.
+- **Local overrides.** `scripts/overrides.json` corrects one upstream rubric bug (St Joseph on Friday of Passion Week, 2027 and 2032) and renames days that upstream titles after one of their Masses (Christmas, All Souls, Our Lady on Saturday).
+- **Divinum Officium** is Cloudflare-protected, so the automated second opinion is `tridentine_calendar` only.
+- **`trans`** was dropped from the Python dependencies: it does not install under current uv and the calendar never imports it.
+- **No force/re-stamp command** in v1; changing the template affects new notes only.
+- **Settings tab** uses the classic `display()` API for Obsidian 1.5 compatibility. Lint warns that 1.13 prefers declarative settings; adopting it would force `minAppVersion` 1.13.
+- **Extra modules**: `dates.ts` (UTC-free date maths), `note-text.ts` (pure frontmatter/callout helpers). `modals.ts` holds a generic `ConfirmModal`.
+- **Tests**: 65 unit and fake-vault tests, plus a manual smoke test of the bundled `main.js` against a mocked Obsidian runtime using the real daily-note template (auto-stamp, simulated Templater rewrite, backfill, idempotence, out-of-range year).
+
+---
+
 Obsidian community plugin that stamps every daily note with the 1962 Roman calendar
 identity of its day: title (Latin + English), class, colour, commemorations, season and
 week, Roman-style date, hand-missal pages. Offline. Bundled data. No network at runtime.
