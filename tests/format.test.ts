@@ -11,6 +11,8 @@ describe("renderCallout, full layout", () => {
 				"> [!festa|violet] Ember Saturday of September",
 				"> Second-class Ember day · 17th week after Pentecost",
 				"> Commemoration: Sts. Cyprian & Justina",
+				"> **Fast and abstinence**",
+				"> Epistle: Heb 9:2–12 · Gospel: Luke 13:6–17",
 				"> *Sabbato Quattuor Temporum Septembris · a.d. VI Kal. Oct.*",
 			].join("\n"),
 		);
@@ -22,6 +24,7 @@ describe("renderCallout, full layout", () => {
 			[
 				"> [!festa|white] The Nativity of Our Lord",
 				"> First-class feast · Octave of Christmas",
+				"> Epistle: Titus 2:11–15 · Gospel: Luke 2:1–14",
 				"> *In Nativitate Domini · a.d. VIII Kal. Ian.*",
 			].join("\n"),
 		);
@@ -32,6 +35,7 @@ describe("renderCallout, full layout", () => {
 			[
 				"> [!festa|white] St. Jerome",
 				"> Third-class feast · 18th week after Pentecost",
+				"> Epistle: 2 Tim 4:1–8 · Gospel: Matt 5:13–19",
 				"> *S. Hieronymi Presbyteri Confessoris et Ecclesiæ Doctoris · prid. Kal. Oct.*",
 			].join("\n"),
 		);
@@ -43,6 +47,8 @@ describe("renderCallout, full layout", () => {
 				"> [!festa|violet] Sabbato Quattuor Temporum Septembris",
 				"> Classis II · Hebdomada XVII post Pentecosten · a.d. VI Kal. Oct.",
 				"> Commemoratio: Ss. Cypriani et Justinæ Martyrum",
+				"> **Jejunium et abstinentia**",
+				"> Epistola: Hebr 9:2–12 · Evangelium: Luc 13:6–17",
 			].join("\n"),
 		);
 		expect(renderCallout(today(), { titleLanguage: "en", template: defaultTemplate("full", "en") }).split("\n")[0]).toBe(
@@ -54,7 +60,7 @@ describe("renderCallout, full layout", () => {
 describe("renderCallout, compact layout and optional segments", () => {
 	it("fits on one line", () => {
 		expect(renderCallout(today(), { titleLanguage: "both", template: defaultTemplate("compact", "both") })).toBe(
-			"> [!festa|violet] Ember Saturday of September · Second-class Ember day · Comm. Sts. Cyprian & Justina",
+			"> [!festa|violet] Ember Saturday of September · Second-class Ember day · Comm. Sts. Cyprian & Justina · **Fast and abstinence**",
 		);
 		expect(renderCallout(lookup("2026-12-25")!, { titleLanguage: "both", template: defaultTemplate("compact", "both") })).toBe(
 			"> [!festa|white] The Nativity of Our Lord · First-class feast",
@@ -65,6 +71,27 @@ describe("renderCallout, compact layout and optional segments", () => {
 		expect(renderCallout(today(), { titleLanguage: "en", template: "Plain line\n{title} {nope}" })).toBe(
 			"Plain line\nEmber Saturday of September {nope}",
 		);
+	});
+});
+
+describe("readings", () => {
+	it("shows the lessons and the Passion on Good Friday", () => {
+		const out = renderCallout(lookup("2026-04-03")!, { titleLanguage: "en", template: "{readings}" });
+		expect(out).toBe("Lessons: Osee 6:1–6; Exod 12:1–11 · Gospel: John 18:1–40; 19:1–42");
+	});
+
+	it("keeps the Ember Saturday prophecies in their own token", () => {
+		const out = renderCallout(lookup("2026-09-26")!, { titleLanguage: "en", template: "{lessons}" });
+		expect(out).toBe("Lev 23:26–32; Lev 23:39–43; Mich 7:14, 16, 18–20; Zach 8:14–19; Dan 3:49–51");
+	});
+
+	it("hides the fasting line when fasting is off", () => {
+		const out = renderCallout(lookup("2026-09-26")!, {
+			titleLanguage: "both",
+			fasting: "off",
+			template: defaultTemplate("full", "both"),
+		});
+		expect(out).not.toContain("Fast");
 	});
 });
 

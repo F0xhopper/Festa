@@ -10,10 +10,13 @@ Writes:
     src/data/meta.json        provenance (upstream commit, generation date, range)
 
 Row format:
-    [date, celebrationId, rank, colour, [[commId, rank, colour], ...], [displacedId, ...], [angelus, lasance, baronius], weekKey]
+    [date, celebrationId, rank, colour, [[commId, rank, colour], ...], [displacedId, ...], [angelus, lasance, baronius],
+     weekKey, readingsIndex, flags]
 Page numbers are 0 when unknown. weekKey names the Sunday that governs the week in the
 temporal cycle ("Pent17", "Epi5", "Quad6", "Adv3", "Pasc0" …), or "Nat" / "Epi0" for the
-Christmas octave and the days between Epiphany and its first Sunday.
+Christmas octave and the days between Epiphany and its first Sunday. readingsIndex points into
+src/data/readings.json ({"en"|"la": {"e": epistle, "g": gospel, "l": [lessons]}}), -1 when the day
+has no Mass readings. flags: "E" on Ember days (even when a feast outranks the Ember day).
 """
 from __future__ import annotations
 
@@ -97,6 +100,54 @@ def week_key(cal, date_: dt.date) -> str:
     return ""
 
 
+REF_LINE = re.compile(r"^\*([^*]+)\*$", re.M)
+CITATION = re.compile(r"^(?:[1-4] ?)?[A-Z][A-Za-zæ]+\.?,? ?\d+[:,. ] ?\d+")
+
+
+def clean_ref(ref: str) -> str:
+    ref = ref.strip().rstrip(".;,")
+    ref = re.sub(r"^((?:[1-4] ?)?[A-Z][A-Za-zæ]+)\.?,? ", r"\1 ", ref)  # "Matt. 26", "4 Kings, 5"
+    ref = re.sub(r"(\d+)\. ?(\d)", r"\1:\2", ref)  # "John 18. 1-40"
+    ref = re.sub(r"^((?:[1-4] ?)?[A-Z][A-Za-zæ]+ \d+), ?(\d)", r"\1:\2", ref)  # "Judith 13, 22-25"
+    return ref.replace("-", "–")
+
+
+def refs(body: str) -> list[str]:
+    return [clean_ref(m) for m in REF_LINE.findall(body) if CITATION.match(m.strip())]
+
+
+def labelled_lessons(body: str) -> list[str]:
+    """Good Friday: citations that directly follow a "... Lesson" heading."""
+    out, prev = [], ""
+    for m in REF_LINE.findall(body):
+        if CITATION.match(m.strip()) and re.search(r"Lesson|Lectio", prev):
+            out.append(clean_ref(m))
+        prev = m
+    return out
+
+
+def readings_of(proper) -> dict:
+    secs = {sec["id"]: sec["body"] for sec in proper.serialize()}
+    first = lambda key: (refs(secs.get(key, "")) or [""])[0]
+    lessons = [first(k) for k in sorted(k for k in secs if re.fullmatch(r"LectioL\d", k))]
+    if "Lectiones" in secs:
+        lessons += labelled_lessons(secs["Lectiones"])
+    gospel = first("Evangelium") or first("Passio")
+    return {"e": first("Lectio"), "g": gospel, "l": [x for x in lessons if x]}
+
+
+def day_readings(date_: dt.date) -> dict | None:
+    from api.controller import get_proper_by_date
+    try:
+        vern, latin = get_proper_by_date(date_, "en")[0]
+    except Exception:
+        return None
+    r = {"en": readings_of(vern), "la": readings_of(latin)}
+    if not (r["en"]["e"] or r["en"]["g"] or r["en"]["l"]):
+        return None
+    return r
+
+
 def colour_of(colors, where: str) -> str:
     if not colors:
         fail(f"no colour for {where}")
@@ -118,11 +169,22 @@ def main() -> None:
     from api.constants.en.pages import PAGES  # noqa: E402
 
     years = parse_years(args.years)
+    readings_table: list[dict] = []
+    readings_index: dict[str, int] = {}
     raw_overrides = json.loads(OVERRIDES.read_text())
     overrides = {k: v for k, v in raw_overrides.items() if not k.startswith("_")}
     title_overrides = raw_overrides.get("_titles", {})
     titles: dict[str, dict[str, str]] = {}
     (args.out / "years").mkdir(parents=True, exist_ok=True)
+
+    def readings_ref(r: dict | None) -> int:
+        if r is None:
+            return -1
+        key = json.dumps(r, sort_keys=True, ensure_ascii=False)
+        if key not in readings_index:
+            readings_index[key] = len(readings_table)
+            readings_table.append(r)
+        return readings_index[key]
 
     def remember(obs_id: str, lang: str, title: str | None) -> None:
         if not title:
@@ -168,6 +230,8 @@ def main() -> None:
                 [o.id for o in displaced],
                 pages_for(PAGES, cel_id),
                 week_key(cals["en"], date_),
+                readings_ref(day_readings(date_)),
+                "E" if any("Ember" in (o.title or "") for o in [*day.all, *displaced]) else "",
             ])
 
         for i, row in enumerate(rows):
@@ -187,6 +251,8 @@ def main() -> None:
                 list(ov["displaced"]),
                 pages_for(PAGES, ov["celebration"]),
                 row[7],
+                row[8],
+                row[9],
             ]
             print(f"  override {row[0]}: {ov['celebration']}")
 
@@ -197,6 +263,9 @@ def main() -> None:
             fail(f"{year}: rows out of order")
         write_json(args.out / "years" / f"{year}.json", rows, rows_per_line=True)
         print(f"{year}: {len(rows)} days")
+
+    write_json(args.out / "readings.json", readings_table, rows_per_line=True)
+    print(f"readings: {len(readings_table)} distinct sets")
 
     for obs_id, repl in title_overrides.items():
         if obs_id not in titles:

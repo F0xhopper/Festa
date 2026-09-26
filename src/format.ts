@@ -1,12 +1,14 @@
 import { rankLabel } from "./describe";
+import { fasting, type FastingDiscipline } from "./fasting";
 import { roman } from "./seasons";
-import { COLOUR_NAME, type DayInfo } from "./types";
+import { COLOUR_NAME, type DayInfo, type ReadingRefs } from "./types";
 
 export type TitleLanguage = "both" | "la" | "en";
 export type Layout = "full" | "compact";
 
 export interface FormatOptions {
 	titleLanguage: TitleLanguage;
+	fasting?: FastingDiscipline;
 	layout: Layout;
 	template: string;
 	frontmatterPrefix: string;
@@ -23,28 +25,52 @@ export const DEFAULT_TEMPLATES: Record<Layout, Record<TitleLanguage, string>> = 
 			"> [!festa|{colour}] {title_en}",
 			"> {rank} · {week_label}",
 			"> Commemoration: {comm_en}",
+			"> **{fasting}**",
+			"> {readings}",
 			"> *{latin_line}*",
 		].join("\n"),
 		la: [
 			"> [!festa|{colour}] {title_la}",
 			"> Classis {class} · {week_label_la} · {roman_date}",
 			"> Commemoratio: {comm_la}",
+			"> **{fasting_la}**",
+			"> {readings_la}",
 		].join("\n"),
 		en: [
 			"> [!festa|{colour}] {title_en}",
 			"> {rank} · {week_label} · {roman_date}",
 			"> Commemoration: {comm_en}",
+			"> **{fasting}**",
+			"> {readings}",
 		].join("\n"),
 	},
 	compact: {
-		both: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?]",
-		la: "> [!festa|{colour}] {title_la} · Classis {class}[? · Comm. {comm_la}?]",
-		en: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?]",
+		both: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?][? · **{fasting}**?]",
+		la: "> [!festa|{colour}] {title_la} · Classis {class}[? · Comm. {comm_la}?][? · **{fasting_la}**?]",
+		en: "> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?][? · **{fasting}**?]",
 	},
 };
 
 /** Templates shipped in earlier versions, so saved copies can be upgraded to the new defaults. */
 export const LEGACY_TEMPLATES: string[] = [
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> {rank} · {week_label}",
+		"> Commemoration: {comm_en}",
+		"> *{latin_line}*",
+	].join("\n"),
+	[
+		"> [!festa|{colour}] {title_en}",
+		"> {rank} · {week_label} · {roman_date}",
+		"> Commemoration: {comm_en}",
+	].join("\n"),
+	[
+		"> [!festa|{colour}] {title_la}",
+		"> Classis {class} · {week_label_la} · {roman_date}",
+		"> Commemoratio: {comm_la}",
+	].join("\n"),
+	"> [!festa|{colour}] {title_en} · {rank}[? · Comm. {comm_en}?]",
+	"> [!festa|{colour}] {title_la} · Classis {class}[? · Comm. {comm_la}?]",
 	[
 		"> [!festa|{colour}] {title_en}",
 		"> *{title_la_sub}*",
@@ -91,13 +117,25 @@ export function isDefaultTemplate(template: string): boolean {
 }
 
 export const TOKENS = [
-	"title", "title_alt", "title_la", "title_en", "title_la_sub", "latin_line", "rank", "class", "class_num", "colour", "colour_code",
+	"title", "title_alt", "title_la", "title_en", "title_la_sub", "latin_line", "rank", "fasting", "fasting_la", "readings", "readings_la", "epistle", "gospel", "lessons", "epistle_la", "gospel_la", "lessons_la", "class", "class_num", "colour", "colour_code",
 	"comm", "comm_alt", "comm_la", "comm_en", "comm_both", "displaced", "weekday_la",
 	"week_label", "week_label_la", "week", "season", "season_la", "roman_date", "roman_date_long",
 	"pages", "date",
 ] as const;
 
-export function tokens(info: DayInfo, lang: TitleLanguage): Record<string, string> {
+function readingsLine(r: ReadingRefs | undefined, la: boolean): string {
+	if (!r) return "";
+	const parts: string[] = [];
+	if (r.e) parts.push(`${la ? "Epistola" : "Epistle"}: ${r.e}`);
+	else if (r.l.length) parts.push(`${la ? "Lectiones" : "Lessons"}: ${r.l.join("; ")}`);
+	if (r.g) parts.push(`${la ? "Evangelium" : "Gospel"}: ${r.g}`);
+	return parts.join(" · ");
+}
+
+export function tokens(info: DayInfo, lang: TitleLanguage, discipline: FastingDiscipline = "traditional"): Record<string, string> {
+	const fast = fasting(info, discipline);
+	const en = info.readings?.en;
+	const la = info.readings?.la;
 	const primary = lang === "en" ? "en" : "la";
 	const secondary = lang === "both" ? "en" : null;
 	const comms = info.commemorations;
@@ -121,6 +159,16 @@ export function tokens(info: DayInfo, lang: TitleLanguage): Record<string, strin
 			.filter(Boolean)
 			.join(" · "),
 		rank: rankLabel(info.celebration, info.weekday),
+		fasting: fast.en,
+		fasting_la: fast.la,
+		readings: readingsLine(en, false),
+		readings_la: readingsLine(la, true),
+		epistle: en?.e ?? "",
+		gospel: en?.g ?? "",
+		lessons: en?.l.join("; ") ?? "",
+		epistle_la: la?.e ?? "",
+		gospel_la: la?.g ?? "",
+		lessons_la: la?.l.join("; ") ?? "",
 		class: roman(info.celebration.rank),
 		class_num: String(info.celebration.rank),
 		colour: COLOUR_NAME[info.celebration.colour],
@@ -163,8 +211,11 @@ function fill(text: string, values: Record<string, string>): { text: string; use
  * so "Commemoration: {comm_en}" disappears on days without a commemoration.
  * Unknown tokens are left as written so a typo is visible.
  */
-export function renderCallout(info: DayInfo, opts: Pick<FormatOptions, "titleLanguage" | "template">): string {
-	const values = tokens(info, opts.titleLanguage);
+export function renderCallout(
+	info: DayInfo,
+	opts: Pick<FormatOptions, "titleLanguage" | "template" | "fasting">,
+): string {
+	const values = tokens(info, opts.titleLanguage, opts.fasting);
 	const out: string[] = [];
 	for (const line of opts.template.split(/\r?\n/)) {
 		let used = 0;

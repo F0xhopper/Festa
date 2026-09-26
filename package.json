@@ -1,6 +1,6 @@
 {
 	"name": "festa",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Traditional Roman calendar (1962) feasts in Obsidian daily notes",
 	"main": "main.js",
 	"type": "module",
@@ -13,7 +13,13 @@
 		"data:generate": "uv run --project scripts python scripts/generate.py --years 2020-2040",
 		"data:verify": "uv run --project scripts python scripts/verify.py"
 	},
-	"keywords": ["obsidian", "catholic", "liturgical-calendar", "1962", "traditional-latin-mass"],
+	"keywords": [
+		"obsidian",
+		"catholic",
+		"liturgical-calendar",
+		"1962",
+		"traditional-latin-mass"
+	],
 	"author": "Eden Fox Phillips",
 	"license": "MIT",
 	"devDependencies": {

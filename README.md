@@ -1,6 +1,6 @@
 # Festa
 
-Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day.
+Festa adds the traditional Roman calendar to your Obsidian daily notes. Each daily note gets the feast of the day according to the 1962 Missal: its English and Latin title, its rank, commemorations, fast and abstinence, the Epistle and Gospel of the day's Mass, the week of the liturgical year and the Roman-style date, in a callout tinted with the liturgical colour of the day.
 
 Everything is bundled with the plugin. It works offline, on desktop and mobile, and never contacts a server.
 
@@ -8,19 +8,22 @@ Everything is bundled with the plugin. It works offline, on desktop and mobile, 
 > [!festa|violet] Ember Saturday of September
 > Second-class Ember day · 17th week after Pentecost
 > Commemoration: Sts. Cyprian & Justina
+> **Fast and abstinence**
+> Epistle: Heb 9:2–12 · Gospel: Luke 13:6–17
 > *Sabbato Quattuor Temporum Septembris · a.d. VI Kal. Oct.*
 ```
 
 ```markdown
 > [!festa|white] St. Jerome
 > Third-class feast · 18th week after Pentecost
+> Epistle: 2 Tim 4:1–8 · Gospel: Matt 5:13–19
 > *S. Hieronymi Presbyteri Confessoris et Ecclesiæ Doctoris · prid. Kal. Oct.*
 ```
 
 The callout is violet, green, red, white, black or rose, following the colour of the day. A compact one-line layout is also available:
 
 ```markdown
-> [!festa|violet] Ember Saturday of September · Second-class Ember day · Comm. Sts. Cyprian & Justina
+> [!festa|violet] Ember Saturday of September · Second-class Ember day · Comm. Sts. Cyprian & Justina · **Fast and abstinence**
 ```
 
 ## Installing
@@ -54,6 +57,18 @@ After updating by hand, reload Obsidian so the new version is loaded.
 
 The second line says what kind of day it is and how it ranks under the 1960 rubrics: for example "First-class feast", "Second-class Sunday", "Second-class Ember day", "First-class vigil", "Third-class feria" or "Second-class day" within an octave. The week is counted from the Sunday that governs it, so in November it follows the Sundays after Epiphany that are resumed at the end of the year.
 
+### Fast and abstinence
+
+A bold line marks the days of fasting and abstinence. Choose the rules in the settings:
+
+- **1962 discipline** (default) follows the 1917 Code that governed the 1962 Missal. Abstinence on Fridays. Fast and abstinence on Ash Wednesday, the Fridays and Saturdays of Lent, the Ember days, and the vigils of Pentecost, the Assumption, All Saints and Christmas. Fast alone on the other weekdays of Lent. Nothing on Sundays, or on holy days of obligation outside Lent. The Holy Saturday fast ends at noon. Some countries had indults that relaxed parts of this, such as partial abstinence on Ember Wednesdays and Saturdays in the United States; Festa shows the universal law.
+- **Current law** follows the 1983 Code: fast and abstinence on Ash Wednesday and Good Friday, abstinence on the Fridays of Lent, and abstinence or another penance on other Fridays unless a solemnity falls on them. Bishops' conferences may adapt these.
+- **Don't show** hides the line.
+
+### Readings
+
+The readings line gives the references for the Epistle and Gospel of the day's Mass, in English, or in Latin with the Latin template. On Good Friday it lists the two lessons and the Passion. The Old Testament lessons of Ember Wednesdays and Saturdays are in the `{lessons}` token, if you want them in your template.
+
 ### Properties
 
 Festa can also write the feast into note properties, so Dataview or Bases can query it: `feast`, `feast_la`, `feast_class`, `feast_color`, `feast_comm`, `feast_season`, `feast_week` and `feast_missal`, which holds the page numbers in the Angelus Press, Baronius and Lasance hand missals. Properties are on by default. Turn off **Insert properties** if you only want the callout.
@@ -71,6 +86,7 @@ SORT file.name ASC
 |---|---|
 | Title language | English with Latin, Latin only, or English only. |
 | Layout | Full puts each detail on its own line. Compact fits the feast on one line. |
+| Fasting and abstinence | 1962 discipline, current law, or don't show. |
 | Callout template | The lines of the callout, built from tokens (see below). Changing language or layout replaces the template unless you have edited it. |
 | Insert callout | Add the callout at the top of the note. |
 | Insert properties | Add the properties listed above. |
@@ -94,6 +110,9 @@ SORT file.name ASC
 | `{comm_en}` / `{comm_la}` | Sts. Cyprian & Justina / Ss. Cypriani et Justinæ Martyrum |
 | `{roman_date}` / `{roman_date_long}` | a.d. VI Kal. Oct. / ante diem sextum Kalendas Octobres |
 | `{latin_line}` | The Latin title and the Roman date together |
+| `{fasting}` / `{fasting_la}` | Fast and abstinence / Jejunium et abstinentia |
+| `{readings}` / `{readings_la}` | Epistle: Heb 9:2–12 · Gospel: Luke 13:6–17 / Epistola: Hebr 9:2–12 · Evangelium: Luc 13:6–17 |
+| `{epistle}`, `{gospel}`, `{lessons}` | Each reference on its own, with `_la` versions |
 | `{weekday_la}` | Sabbato |
 | `{pages}` | Angelus Press p. 785 · Baronius p. 708 · Lasance p. 699 |
 | `{displaced}` | Feasts that give way to this day |
@@ -113,7 +132,7 @@ Festa waits briefly after a note is created and checks again a moment later, so 
 
 ## Data
 
-The calendar covers **2020 to 2040** and follows the 1962 rubrics for the general Roman calendar. It is generated from [Missale Meum](https://github.com/mmolenda/missalemeum) by Marcin Molenda (MIT licence), pinned to a specific commit that the settings tab shows.
+The calendar covers **2020 to 2040** and follows the 1962 rubrics for the general Roman calendar. The reading references come from the Mass texts of the [Divinum Officium](https://github.com/DivinumOfficium/divinum-officium) project (MIT licence), which Missale Meum builds on. It is generated from [Missale Meum](https://github.com/mmolenda/missalemeum) by Marcin Molenda (MIT licence), pinned to a specific commit that the settings tab shows.
 
 Each bundled year is checked against the live Missale Meum service and against an independent implementation, Joe Antognini's [tridentine_calendar](https://github.com/joe-antognini/tridentine_calendar). The results are logged in `scripts/VERIFIED.md`. Local corrections live in `scripts/overrides.json`:
 
@@ -126,7 +145,7 @@ National and religious-order calendars are not included yet.
 To regenerate the data you need Python 3.13 or newer and [uv](https://docs.astral.sh/uv/):
 
 ```bash
-git submodule update --init
+git submodule update --init --recursive --depth 1
 npm run data:generate          # writes src/data/
 npm run data:verify -- 2026    # round-trip, second opinion, awkward-date table
 ```
@@ -147,11 +166,11 @@ Pushing a tag builds `main.js` and creates a draft GitHub release with the three
 
 ## Roadmap
 
-- 1.1: rosary mysteries, weekday and monthly devotions, First Friday and First Saturday, the seasonal Marian antiphon.
-- 1.2: fasting and abstinence, with presets for different disciplines, and holy days of obligation by country.
-- 2.0: the Collect, Epistle and Gospel, and the Roman Martyrology of the day.
+- Rosary mysteries, weekday and monthly devotions, First Friday and First Saturday, the seasonal Marian antiphon.
+- Holy days of obligation by country.
+- The Collect and the Roman Martyrology of the day.
 - Later: national and religious-order calendars.
 
 ## Licence
 
-MIT. Calendar data derived from Missale Meum, also MIT.
+MIT. Calendar data derived from Missale Meum and Divinum Officium, both MIT.

@@ -1,10 +1,10 @@
 {
 	"id": "festa",
 	"name": "Festa",
-	"version": "1.0.0",
 	"minAppVersion": "1.5.0",
 	"description": "Adds the traditional Roman calendar (1962 Missal) feast of the day to your daily notes: title in Latin and English, class, liturgical colour, commemorations, season and Roman date. Works offline.",
 	"author": "Eden Fox Phillips",
 	"authorUrl": "https://github.com/F0xhopper",
-	"isDesktopOnly": false
+	"isDesktopOnly": false,
+	"version": "1.1.0"
 }

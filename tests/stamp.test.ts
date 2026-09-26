@@ -33,6 +33,7 @@ function fakeApp(files: Record<string, string>) {
 
 const SETTINGS: StampSettings = {
 	titleLanguage: "both",
+	fasting: "traditional",
 	template: defaultTemplate("full", "both"),
 	frontmatterPrefix: "feast",
 	insertFrontmatter: true,
@@ -118,6 +119,8 @@ describe("refreshFile", () => {
 				"> [!festa|violet] Ember Saturday of September",
 				"> Second-class Ember day · 17th week after Pentecost",
 				"> Commemoration: Sts. Cyprian & Justina",
+				"> **Fast and abstinence**",
+				"> Epistle: Heb 9:2–12 · Gospel: Luke 13:6–17",
 				"> *Sabbato Quattuor Temporum Septembris · a.d. VI Kal. Oct.*",
 				"",
 				"## Tasks",

@@ -1,12 +1,14 @@
 import { type App, PluginSettingTab, Setting } from "obsidian";
 import { dataRange } from "./calendar";
 import { dailyNoteLocation } from "./daily-notes";
+import type { FastingDiscipline } from "./fasting";
 import { defaultTemplate, isDefaultTemplate, type Layout, TOKENS, type TitleLanguage } from "./format";
 import type FestaPlugin from "./main";
 
 export interface FestaSettings {
 	titleLanguage: TitleLanguage;
 	layout: Layout;
+	fasting: FastingDiscipline;
 	template: string;
 	insertFrontmatter: boolean;
 	frontmatterPrefix: string;
@@ -21,6 +23,7 @@ export interface FestaSettings {
 export const DEFAULT_SETTINGS: FestaSettings = {
 	titleLanguage: "both",
 	layout: "full",
+	fasting: "traditional",
 	template: defaultTemplate("full", "both"),
 	insertFrontmatter: true,
 	frontmatterPrefix: "feast",
@@ -76,6 +79,19 @@ export class FestaSettingTab extends PluginSettingTab {
 						if (isDefaultTemplate(s.template)) s.template = defaultTemplate(s.layout, s.titleLanguage);
 						await this.plugin.saveSettings();
 						this.display();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Fasting and abstinence")
+			.setDesc("Which rules to use for marking fast and abstinence days.")
+			.addDropdown((d) =>
+				d
+					.addOptions({ traditional: "1962 discipline", current: "Current law", off: "Don't show" })
+					.setValue(s.fasting)
+					.onChange(async (value) => {
+						s.fasting = value as FastingDiscipline;
+						await this.plugin.saveSettings();
 					}),
 			);
 

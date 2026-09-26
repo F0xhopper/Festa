@@ -26,7 +26,7 @@ export interface Bilingual {
 
 export type Titles = Record<string, Bilingual>;
 
-/** [date, celebrationId, rank, colour, commemorations, displaced, pages, weekKey] */
+/** [date, celebrationId, rank, colour, commemorations, displaced, pages, weekKey, readingsIndex, flags] */
 export type YearRow = [
 	string,
 	string,
@@ -36,7 +36,18 @@ export type YearRow = [
 	string[],
 	[number, number, number],
 	string,
+	number,
+	string,
 ];
+
+/** Scripture references for one language: epistle, gospel, and extra lessons (Ember days, Good Friday). */
+export interface ReadingRefs {
+	e: string;
+	g: string;
+	l: string[];
+}
+
+export type Readings = Record<"en" | "la", ReadingRefs>;
 
 export type Rank = 1 | 2 | 3 | 4;
 
@@ -71,6 +82,11 @@ export interface DayInfo extends WeekInfo {
 	commemorations: Observance[];
 	displaced: { id: string; title: Bilingual }[];
 	pages: MissalPages;
+	readings: Readings | null;
+	/** An Ember day, even when a feast outranks it. */
+	ember: boolean;
+	/** The key of the Sunday that governs the week ("Pent17", "Quad6" …). */
+	weekKey: string;
 	weekdayLa: string;
 	romanDate: { short: string; long: string };
 }

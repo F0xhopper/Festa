@@ -43,7 +43,7 @@ def round_trip(year: int, titles, rows) -> int:
     overrides = {k: v for k, v in raw.items() if not k.startswith("_")}
     renamed = {k: v.get("en") for k, v in raw.get("_titles", {}).items() if "en" in v}
     diffs = 0
-    for iso, cel, rank, colour, comms, displaced, _pages, _wk in rows:
+    for iso, cel, rank, colour, comms, displaced, _pages, *_rest in rows:
         l = live_by.get(iso)
         if iso in overrides:
             print(f"  {iso}: local override (expected to differ): {overrides[iso]['reason'][:80]}")
@@ -110,7 +110,7 @@ def second_opinion(year: int, titles, rows) -> int:
         return []
 
     flagged = 0
-    for iso, cel, rank, _c, comms, _d, _p, _wk in rows:
+    for iso, cel, rank, _c, comms, _d, _p, *_rest in rows:
         d = dt.date.fromisoformat(iso)
         ev = events(d)
         ours = titles[cel]["en"]
@@ -132,7 +132,7 @@ def awkward(year: int, titles, rows) -> None:
     last_three = {r[0] for r in [s for s in sundays if s[0] < advent1(year).isoformat()][-3:]}
     print(f"\nawkward dates {year} (check against a printed Ordo):")
     print(f"  {'date':<10} {'day':<3}  {'class':<5} {'colour':<6}  celebration  [commemorations]")
-    for iso, cel, rank, colour, comms, displaced, _p, _wk in rows:
+    for iso, cel, rank, colour, comms, displaced, _p, *_rest in rows:
         d = dt.date.fromisoformat(iso)
         md = iso[5:]
         reason = (

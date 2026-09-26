@@ -1,10 +1,12 @@
 import type { App, TFile } from "obsidian";
 import { lookup } from "./calendar";
+import type { FastingDiscipline } from "./fasting";
 import { FIELD_SUFFIXES, frontmatterFields, renderCallout, type TitleLanguage } from "./format";
 import { CALLOUT_MARKER, dropEmptyFrontmatter, hasMarker, insertAfterFrontmatter, removeCallout, splitFrontmatter } from "./note-text";
 
 export interface StampSettings {
 	titleLanguage: TitleLanguage;
+	fasting: FastingDiscipline;
 	template: string;
 	frontmatterPrefix: string;
 	insertFrontmatter: boolean;

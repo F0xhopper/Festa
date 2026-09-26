@@ -1,12 +1,14 @@
 import titlesJson from "./data/titles.json";
 import meta from "./data/meta.json";
+import readingsJson from "./data/readings.json";
 import { YEARS } from "./data/index";
 import { dayOfYear, parseISO, weekday } from "./dates";
 import { romanDate } from "./roman-date";
 import { weekInfo, weekdayLa } from "./seasons";
-import type { Bilingual, Colour, DayInfo, Observance, Rank, Titles } from "./types";
+import type { Bilingual, Colour, DayInfo, Observance, Rank, Readings, Titles } from "./types";
 
 const TITLES = titlesJson as Titles;
+const READINGS = readingsJson as Readings[];
 
 export interface DataRange {
 	from: number;
@@ -43,7 +45,7 @@ export function lookup(dateISO: string): DayInfo | undefined {
 	const row = rows[dayOfYear(date)];
 	if (!row || row[0] !== dateISO) throw new Error(`Festa: data out of order at ${dateISO}`);
 
-	const [, celId, rank, colour, comms, displaced, pages, weekKey] = row;
+	const [, celId, rank, colour, comms, displaced, pages, weekKey, readingsIndex, flags] = row;
 	const wd = weekday(date);
 	const [angelus, lasance, baronius] = pages;
 
@@ -61,6 +63,9 @@ export function lookup(dateISO: string): DayInfo | undefined {
 			...(lasance ? { lasance } : {}),
 			...(baronius ? { baronius } : {}),
 		},
+		readings: READINGS[readingsIndex] ?? null,
+		ember: flags.includes("E"),
+		weekKey,
 		...weekInfo(weekKey, date, wd),
 		weekdayLa: weekdayLa(wd),
 		romanDate: romanDate(date),

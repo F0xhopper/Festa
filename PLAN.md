@@ -2,6 +2,8 @@
 
 ## Status (2026-09-26)
 
+1.1.0 adds fasting and abstinence (1917 and 1983 rules) and the Epistle and Gospel references, generated from Missale Meum's Mass propers (Divinum Officium texts, nested submodule).
+
 Phases 0–3 are built, tested and pushed. Phase 4 remains: live with it in the vault, check 2026 against a printed Ordo, publish a release, submit to the community list.
 
 Where the build deviates from the plan below:
