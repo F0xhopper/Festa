@@ -1,0 +1,11 @@
+.vscode
+.idea
+*.iml
+node_modules
+main.js
+*.map
+data.json
+.DS_Store
+.venv
+__pycache__
+*.tgz

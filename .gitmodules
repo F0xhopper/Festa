@@ -1,0 +1,3 @@
+[submodule "vendor/missalemeum"]
+	path = vendor/missalemeum
+	url = https://github.com/mmolenda/missalemeum

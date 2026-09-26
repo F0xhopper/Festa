@@ -1,0 +1,18 @@
+[project]
+name = "festa-data"
+version = "1.0.0"
+description = "Generates and verifies Festa's bundled 1962 calendar data from Missale Meum"
+requires-python = ">=3.13"
+dependencies = [
+  "python-dateutil~=2.9.0",
+  "click~=8.3",
+  "icalendar~=7.0",
+  "mistune~=3.2",
+  "PyYAML~=6.0",
+  "diskcache==5.6.3",
+  "requests>=2.32",
+  "tridentine-calendar",
+]
+
+[tool.uv.sources]
+tridentine-calendar = { git = "https://github.com/joe-antognini/tridentine_calendar" }

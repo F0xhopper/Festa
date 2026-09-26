@@ -1,0 +1,15 @@
+{
+ "_doc": "Corrections applied on top of Missale Meum output. Each entry replaces the row for that date. Rank and colour are read from the observance id (…:<rank>:<colour>). Report each upstream and delete it once fixed there.",
+ "2027-03-19": {
+  "celebration": "sancti:03-19:1:w",
+  "commemorations": ["tempora:Quad5-5Feria:3:v"],
+  "displaced": [],
+  "reason": "St Joseph (class I) falls on Friday of Passion Week. Missale Meum's rule_seven_sorrows_on_friday_after_passion_sunday returns before precedence is checked, so the class III feria wins. Rubricae generales 1960: a class I feast outranks a class III Lenten feria, which is commemorated."
+ },
+ "2032-03-19": {
+  "celebration": "sancti:03-19:1:w",
+  "commemorations": ["tempora:Quad5-5Feria:3:v"],
+  "displaced": [],
+  "reason": "Same as 2027-03-19."
+ }
+}
